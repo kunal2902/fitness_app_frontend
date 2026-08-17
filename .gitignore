@@ -1,75 +1,82 @@
-# OSX
-#
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
 .DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
 
-# Xcode
-#
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-**/.xcode.env.local
-
-# Android/IntelliJ
-#
-build/
-.idea
-.gradle
-local.properties
+# IntelliJ / Android Studio
 *.iml
-*.hprof
-.cxx/
-*.keystore
-!debug.keystore
-.kotlin/
+*.ipr
+*.iws
+.idea/
 
-# node.js
-#
-node_modules/
-npm-debug.log
-yarn-error.log
+# VS Code
+.vscode/
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
+# Flutter / Dart
+**/doc/api/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
 
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
+# NOTE: pubspec.lock is deliberately NOT ignored.
+# This is an application, not a package. Committing the lock pins the exact
+# resolved versions so every machine and CI run builds identically.
+# (An unpinned `dio` silently moving 5.7 -> 5.11 added a new enum value and
+# broke the build; a committed lock prevents that class of surprise.)
 
-# Bundle artifact
-*.jsbundle
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/key.properties
+**/*.keystore
+**/*.jks
 
-# Ruby / CocoaPods
-**/Pods/
-/vendor/bundle/
+# iOS / macOS
+**/ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+macos/Pods/
 
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
+# Linux / Windows
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
 
-# testing
-/coverage
+# Web
+web/.dart_tool/
 
-# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+# Coverage
+coverage/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Scratch folders created while migrating off React Native.
+# Safe to delete these folders entirely once you are happy.
+_to_delete/
+_backup_original/
