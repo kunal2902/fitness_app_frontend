@@ -21,6 +21,9 @@ dependencies:
   # Networking
   dio: ^5.7.0
 
+  # Media
+  image_picker: ^1.1.2
+
   # Local persistence (backs the BLoC layer)
   shared_preferences: ^2.3.2
   flutter_secure_storage: ^9.2.2

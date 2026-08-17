@@ -160,7 +160,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     textTertiary: AppColors.lightTextTertiary,
     accent: AppColors.voltDeep,
     onAccent: Colors.white,
-    cardGradient: LinearGradient(
+    cardGradient: const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: <Color>[AppColors.lightSurfaceHigh, AppColors.lightSurface],

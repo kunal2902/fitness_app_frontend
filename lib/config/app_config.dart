@@ -50,8 +50,38 @@ class AppConfig {
     }
   }
 
+  /// Origin that serves uploaded files.
+  ///
+  /// Avatars are served from `/uploads/...`, which sits *outside* the API
+  /// prefix, so the prefix has to come off the base URL. The backend stores
+  /// a relative path rather than an absolute URL precisely so the same
+  /// record works from an emulator, a LAN device and production.
+  static String get mediaBaseUrl {
+    final String base = apiBaseUrl;
+    final int index = base.indexOf('/api/');
+    return index == -1 ? base : base.substring(0, index);
+  }
+
+  /// Turns whatever the server put in `avatarUrl` into something
+  /// [Image.network] can load. Absolute URLs pass through untouched, so a
+  /// future move to S3 or a CDN needs no client change.
+  static String? resolveMediaUrl(String? path) {
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '$mediaBaseUrl${path.startsWith('/') ? '' : '/'}$path';
+  }
+
   static const Duration connectTimeout = Duration(seconds: 20);
   static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration uploadTimeout = Duration(seconds: 60);
+
+  /// Keep in sync with MAX_AVATAR_BYTES on the backend.
+  static const int maxAvatarBytes = 5 * 1024 * 1024;
+
+  /// Downscale before upload — a modern phone camera produces 4–8 MB files
+  /// that would be rejected, and an avatar is never rendered above ~200 px.
+  static const int avatarMaxDimension = 1024;
+  static const int avatarJpegQuality = 88;
 
   /// Log HTTP traffic. Never on in release.
   static bool get enableNetworkLogs => !isProd;

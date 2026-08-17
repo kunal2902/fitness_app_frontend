@@ -143,6 +143,31 @@ class ApiClient {
     return _send(() => _dio.delete<dynamic>(path, data: body));
   }
 
+  /// Multipart POST for file uploads.
+  ///
+  /// Takes a *builder* rather than a ready [FormData] on purpose: a
+  /// FormData is a one-shot stream, so if [_send] retries after refreshing
+  /// an expired token, replaying the same instance throws "already
+  /// finalized". Building a fresh one per attempt makes uploads survive a
+  /// token expiring mid-request, which is exactly when a slow upload is
+  /// most likely to be hit.
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Future<FormData> Function() formBuilder,
+    Duration? timeout,
+  }) {
+    return _send(
+      () async => _dio.post<dynamic>(
+        path,
+        data: await formBuilder(),
+        options: Options(
+          sendTimeout: timeout,
+          receiveTimeout: timeout,
+        ),
+      ),
+    );
+  }
+
   // -------------------------------------------------------------------------
   // Core
   // -------------------------------------------------------------------------

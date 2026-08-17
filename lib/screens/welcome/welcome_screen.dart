@@ -52,7 +52,7 @@ class WelcomeScreen extends StatelessWidget {
                 Container(
                   height: 64,
                   width: 64,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: AppColors.voltGradient,
                     borderRadius: AppRadius.rLg,
                   ),

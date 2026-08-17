@@ -24,6 +24,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogout);
     on<AuthSessionExpired>(_onSessionExpired);
     on<AuthErrorCleared>(_onErrorCleared);
+    on<AuthUserUpdated>(_onUserUpdated);
   }
 
   final AuthService _service;
@@ -162,5 +163,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _onErrorCleared(AuthErrorCleared event, Emitter<AuthState> emit) {
     emit(state.copyWith(clearError: true));
+  }
+
+  void _onUserUpdated(AuthUserUpdated event, Emitter<AuthState> emit) {
+    emit(state.copyWith(user: event.user));
   }
 }

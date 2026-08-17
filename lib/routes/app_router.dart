@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/auth/account_details_screen.dart';
 import '../screens/auth/login_screen.dart';
-import '../screens/home/home_screen.dart';
+import '../screens/main/main_shell_screen.dart';
 import '../screens/onboarding/onboarding_flow_screen.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/welcome/welcome_screen.dart';
@@ -26,7 +26,13 @@ class AppRouter {
       case AppRoutes.login:
         return _page(const LoginScreen(), settings);
       case AppRoutes.home:
-        return _page(const HomeScreen(), settings);
+        // The five-tab shell. `arguments` may carry an int to open a
+        // specific tab (e.g. deep-linking straight to Profile).
+        final Object? args = settings.arguments;
+        return _page(
+          MainShellScreen(initialIndex: args is int ? args : 0),
+          settings,
+        );
       default:
         return _page(
           Scaffold(

@@ -148,7 +148,7 @@ class OnboardingData extends Equatable {
     final List<FitnessGoal> parsedGoals = rawGoals is List
         ? rawGoals
             .map((Object? e) =>
-                optionFromApi<FitnessGoal>(FitnessGoal.values, e as String?),)
+                optionFromApi<FitnessGoal>(FitnessGoal.values, e as String?))
             .whereType<FitnessGoal>()
             .toList()
         : const <FitnessGoal>[];

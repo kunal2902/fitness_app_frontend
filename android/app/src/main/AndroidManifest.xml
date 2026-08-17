@@ -6,6 +6,17 @@
          internet at all and every request fails. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Profile picture capture. image_picker uses the system photo
+         picker for the gallery, which needs no permission on
+         Android 13+, but taking a new photo does. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- required="false" so the app still installs on devices with
+         no camera; the picker falls back to the gallery. -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false"/>
+
     <application
         android:label="Fitness App"
         android:name="${applicationName}"

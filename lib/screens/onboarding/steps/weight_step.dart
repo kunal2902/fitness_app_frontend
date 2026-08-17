@@ -10,7 +10,7 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/unit_converter.dart';
 import '../../../widgets/onboarding_step_layout.dart';
 import '../../../widgets/ruler_picker.dart';
-import '../../../widgets/unit_toggle.dart';
+import '../../../widgets/segmented_toggle.dart';
 
 /// Q3 — Weight, with a kg ⇄ lbs toggle.
 ///
@@ -59,7 +59,7 @@ class _WeightStepState extends State<WeightStep> {
           child: Column(
             children: <Widget>[
               Center(
-                child: UnitToggle<WeightUnit>(
+                child: SegmentedToggle<WeightUnit>(
                   width: 200,
                   values: WeightUnit.values,
                   selected: unit,

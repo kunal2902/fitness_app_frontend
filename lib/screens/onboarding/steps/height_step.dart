@@ -10,7 +10,7 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/unit_converter.dart';
 import '../../../widgets/onboarding_step_layout.dart';
 import '../../../widgets/ruler_picker.dart';
-import '../../../widgets/unit_toggle.dart';
+import '../../../widgets/segmented_toggle.dart';
 
 /// Q2 — Height, with a cm ⇄ ft/in toggle.
 ///
@@ -65,7 +65,7 @@ class _HeightStepState extends State<HeightStep> {
           child: Column(
             children: <Widget>[
               Center(
-                child: UnitToggle<HeightUnit>(
+                child: SegmentedToggle<HeightUnit>(
                   width: 200,
                   values: HeightUnit.values,
                   selected: unit,

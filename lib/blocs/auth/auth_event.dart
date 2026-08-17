@@ -60,3 +60,16 @@ class AuthSessionExpired extends AuthEvent {
 class AuthErrorCleared extends AuthEvent {
   const AuthErrorCleared();
 }
+
+/// The user record changed elsewhere (a profile edit, a new avatar).
+///
+/// [AppStore] is the source of truth and has already persisted it; this
+/// just keeps [AuthBloc]'s copy from going stale for anything that reads
+/// the user through a `BlocBuilder<AuthBloc, AuthState>`.
+class AuthUserUpdated extends AuthEvent {
+  const AuthUserUpdated(this.user);
+  final UserModel user;
+
+  @override
+  List<Object?> get props => <Object?>[user];
+}
