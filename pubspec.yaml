@@ -24,6 +24,18 @@ dependencies:
   # Media
   image_picker: ^1.1.2
 
+  # Realtime — chat and WebRTC signalling share one socket
+  socket_io_client: ^3.1.6
+
+  # Peer-to-peer audio/video. Media never touches our server.
+  flutter_webrtc: ^1.6.0
+
+  # Ringing while backgrounded: FCM data messages on Android,
+  # PushKit VoIP on iOS, both surfaced through CallKit.
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+  flutter_callkit_incoming: ^3.1.5
+
   # Local persistence (backs the BLoC layer)
   shared_preferences: ^2.3.2
   flutter_secure_storage: ^9.2.2

@@ -71,6 +71,10 @@ class AppConfig {
     return '$mediaBaseUrl${path.startsWith('/') ? '' : '/'}$path';
   }
 
+  /// Socket.IO attaches to the server root, not under the API prefix, so
+  /// this is the bare origin.
+  static String get socketUrl => mediaBaseUrl;
+
   static const Duration connectTimeout = Duration(seconds: 20);
   static const Duration receiveTimeout = Duration(seconds: 30);
   static const Duration uploadTimeout = Duration(seconds: 60);
@@ -104,4 +108,28 @@ class AppConfig {
   static const double defaultWeightKg = 70;
 
   static const int maxGoalSelections = 3;
+
+  // --- Calls ---
+
+  /// How long we ring before giving up. Must match CALL_RING_TIMEOUT_SECONDS
+  /// on the backend, or one side gives up while the other is still ringing.
+  static const Duration callRingTimeout = Duration(seconds: 45);
+
+  /// How long to keep trying to re-establish media before ending the call.
+  static const Duration callReconnectGrace = Duration(seconds: 20);
+
+  /// How long the "Connecting…" phase may last before the call is failed.
+  ///
+  /// Nothing else bounds it: a peer connection that never receives an
+  /// offer stays in `new` forever and never reports `failed`, so without
+  /// this the callee waits with the camera on until they give up.
+  /// Generous — ICE on a bad cellular link genuinely can take 15s.
+  static const Duration callConnectTimeout = Duration(seconds: 40);
+
+  /// Typing indicators expire locally too — a stale "typing…" left behind
+  /// by a dropped socket is worse than a missed one.
+  static const Duration typingIndicatorTimeout = Duration(seconds: 4);
+  static const Duration typingThrottle = Duration(milliseconds: 1500);
+
+  static const int chatPageSize = 30;
 }

@@ -19,6 +19,24 @@ class ApiEndpoints {
   static const String profile = '/users/me';
   static const String avatar = '/users/me/avatar';
 
+  // Assistance — coaches, chat and calls
+  static const String professionals = '/professionals';
+  static String professional(String id) => '/professionals/$id';
+  static String professionalConversation(String id) =>
+      '/professionals/$id/conversation';
+
+  static const String conversations = '/conversations';
+  static String conversationMessages(String id) =>
+      '/conversations/$id/messages';
+  static String conversationRead(String id) => '/conversations/$id/read';
+
+  static const String iceServers = '/calls/ice-servers';
+  static const String callHistory = '/calls/history';
+  static String endCall(String callId) => '/calls/$callId/end';
+
+  static const String devices = '/devices';
+  static String device(String token) => '/devices/$token';
+
   // Reserved for later phases — listed so the surface area is visible.
   // NOTE: none of these are mounted on the backend yet; calling one now
   // returns 404.

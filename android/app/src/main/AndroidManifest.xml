@@ -6,15 +6,67 @@
          internet at all and every request fails. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
-    <!-- Profile picture capture. image_picker uses the system photo
-         picker for the gallery, which needs no permission on
-         Android 13+, but taking a new photo does. -->
+    <!-- Profile picture capture, and the camera for video calls.
+         image_picker uses the system photo picker for the gallery, which
+         needs no permission on Android 13+, but taking a new photo does. -->
     <uses-permission android:name="android.permission.CAMERA"/>
 
-    <!-- required="false" so the app still installs on devices with
-         no camera; the picker falls back to the gallery. -->
+    <!-- ================= Calling ================= -->
+
+    <!-- The microphone for voice and video calls. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- Routing audio to the earpiece, the speaker, or a headset.
+         Without it setSpeakerphoneOn() is a silent no-op and every call
+         plays through the earpiece regardless of what the button says. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+
+    <!-- Android 12+ requires a runtime grant before the app can even see
+         a connected Bluetooth headset to route call audio to it. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+
+    <!-- Self-managed ConnectionService. This is what lets the app register
+         its calls with the telecom stack, so the system knows a call is in
+         progress and does not, for example, start playing music over it. -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
+
+    <!-- Android 13+ gates every notification behind a runtime grant. The
+         incoming-call notification is a notification like any other. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Turning a notification into a real ringing screen over the lock
+         screen. Android 14+ restricts this to calling and alarm apps, which
+         is exactly what this is; Play Console asks you to declare it. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
+    <!-- Keeps the CPU awake while ringing and while a call is connected.
+         Without it a doze-mode device can suspend the socket mid-call. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- The ongoing-call foreground service. On Android 14+ a foreground
+         service must additionally declare its *type*, and the types must
+         match what the service actually does, or it is killed on start. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL"/>
+
+    <!-- required="false" throughout so the app still installs on devices
+         without the hardware; a phone with no camera can still take voice
+         calls, and the UI checks before offering video. -->
     <uses-feature
         android:name="android.hardware.camera"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.microphone"
         android:required="false"/>
 
     <application
@@ -30,6 +82,14 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
+            <!-- Note what is deliberately NOT here: android:showWhenLocked
+                 and android:turnScreenOn. Setting them in the manifest makes
+                 the WHOLE app displayable over the lock screen for its entire
+                 lifetime - press power on a locked phone with the app in the
+                 foreground and someone sees the user's profile. MainActivity
+                 turns those flags on at runtime for the duration of a call
+                 only, and off again when it ends. -->
+
             <!-- Theme shown from process start until the Flutter engine draws
                  its first frame. Ours is the brand near-black, so there is no
                  white flash before the dark UI appears. -->
@@ -47,6 +107,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Incoming calls arrive as data-only FCM messages, so this is the
+             channel the app creates for them. Declaring the default channel
+             id keeps a mis-routed notification out of the silent "Misc"
+             bucket, where a ringing call would never be heard. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="fitness_app_calls"/>
     </application>
 
     <!-- Required to query activities that can process text, see:

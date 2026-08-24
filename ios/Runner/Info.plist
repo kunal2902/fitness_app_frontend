@@ -45,11 +45,50 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- ================= Permission prompts =================
+	     iOS shows these strings verbatim in the system dialog, and App
+	     Review rejects a build whose reason is generic. Each one says what
+	     the app does with the hardware, not that it "needs access". A
+	     missing key is worse than a bad one: the app crashes outright the
+	     first time it touches that hardware. -->
 	<key>NSCameraUsageDescription</key>
-	<string>Take a photo to use as your profile picture.</string>
+	<string>Take a photo for your profile, and share video during calls with your coach.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Talk to your coach during voice and video calls.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a photo from your library to use as your profile picture.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save photos you capture in the app to your library.</string>
+
+	<!-- ================= Background execution =================
+	     voip:  lets PushKit wake the app for an incoming call when it is
+	            not running. Without it the VoIP push is never delivered and
+	            the phone simply does not ring.
+	     audio: keeps the call alive once the user leaves the app or locks
+	            the screen. Without it iOS suspends the process a few
+	            seconds after backgrounding and the call goes silent.
+	     Apple requires that a voip push always results in a reported
+	     CallKit call - the plugin does that for us. Reporting nothing gets
+	     the app's VoIP push privileges revoked. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>voip</string>
+		<string>audio</string>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
+
+	<!-- Release builds talk to HTTPS only. Debug builds reach a plain-HTTP
+	     dev server on localhost, which ATS allows by default for loopback,
+	     so no global exception is needed here - and adding one would ship
+	     to production. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
