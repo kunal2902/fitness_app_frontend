@@ -24,8 +24,14 @@ class ApiException implements Exception {
 
   bool get isNetworkError => statusCode == null;
   bool get isUnauthorized => statusCode == 401;
+  bool get isNotFound => statusCode == 404;
   bool get isConflict => statusCode == 409;
   bool get isValidationError => statusCode == 422 || fieldErrors.isNotEmpty;
+
+  /// We abandoned the request ourselves — a superseded type-ahead search,
+  /// a screen closing mid-flight. Never surface this to the user: it is
+  /// not a failure, it is the previous keystroke.
+  bool get isCancelled => code == 'CANCELLED';
 
   const ApiException.network()
       : message = 'No internet connection. Check your network and try again.',

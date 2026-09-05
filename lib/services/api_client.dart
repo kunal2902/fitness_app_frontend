@@ -92,15 +92,23 @@ class ApiClient {
   // Verbs
   // -------------------------------------------------------------------------
 
+  /// [cancelToken] is for type-ahead: search fires on every keystroke and
+  /// the responses can land out of order, so an abandoned request must be
+  /// cancelled rather than allowed to overwrite newer results. A cancelled
+  /// request surfaces as `ApiException(code: 'CANCELLED')` — see
+  /// [ApiException.isCancelled], which callers should ignore rather than
+  /// show.
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, dynamic>? query,
     bool skipAuth = false,
+    CancelToken? cancelToken,
   }) {
     return _send(
       () => _dio.get<dynamic>(
         path,
         queryParameters: query,
+        cancelToken: cancelToken,
         options: Options(extra: <String, dynamic>{'skipAuth': skipAuth}),
       ),
       skipAuth: skipAuth,
@@ -112,11 +120,13 @@ class ApiClient {
     Object? body,
     Map<String, dynamic>? query,
     bool skipAuth = false,
+    CancelToken? cancelToken,
   }) {
     return _send(
       () => _dio.post<dynamic>(
         path,
         data: body,
+        cancelToken: cancelToken,
         queryParameters: query,
         options: Options(extra: <String, dynamic>{'skipAuth': skipAuth}),
       ),
@@ -128,19 +138,27 @@ class ApiClient {
     String path, {
     Object? body,
     bool skipAuth = false,
+    CancelToken? cancelToken,
   }) {
     return _send(
       () => _dio.patch<dynamic>(
         path,
         data: body,
+        cancelToken: cancelToken,
         options: Options(extra: <String, dynamic>{'skipAuth': skipAuth}),
       ),
       skipAuth: skipAuth,
     );
   }
 
-  Future<Map<String, dynamic>> delete(String path, {Object? body}) {
-    return _send(() => _dio.delete<dynamic>(path, data: body));
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    Object? body,
+    CancelToken? cancelToken,
+  }) {
+    return _send(
+      () => _dio.delete<dynamic>(path, data: body, cancelToken: cancelToken),
+    );
   }
 
   /// Multipart POST for file uploads.
@@ -229,22 +247,28 @@ class ApiClient {
       );
 
       final Map<String, dynamic> body = _asMap(res.data);
-      final Map<String, dynamic> payload =
-          body['data'] is Map<String, dynamic> ? body['data'] as Map<String, dynamic> : body;
-      final Map<String, dynamic> tokens = payload['tokens'] is Map<String, dynamic>
-          ? payload['tokens'] as Map<String, dynamic>
-          : payload;
+      final Map<String, dynamic> payload = body['data'] is Map<String, dynamic>
+          ? body['data'] as Map<String, dynamic>
+          : body;
+      final Map<String, dynamic> tokens =
+          payload['tokens'] is Map<String, dynamic>
+              ? payload['tokens'] as Map<String, dynamic>
+              : payload;
 
       final String? access = tokens['accessToken'] as String?;
       final String? newRefresh = tokens['refreshToken'] as String?;
 
       final int status = res.statusCode ?? 0;
 
-      if (status >= 200 && status < 300 && access != null && access.isNotEmpty) {
+      if (status >= 200 &&
+          status < 300 &&
+          access != null &&
+          access.isNotEmpty) {
         await StorageService.instance.writeTokens(
           accessToken: access,
-          refreshToken:
-              (newRefresh != null && newRefresh.isNotEmpty) ? newRefresh : refreshToken,
+          refreshToken: (newRefresh != null && newRefresh.isNotEmpty)
+              ? newRefresh
+              : refreshToken,
         );
         _refreshCompleter!.complete(access);
         return access;
@@ -342,7 +366,9 @@ class ApiClient {
     if (status == 404) return 'We could not find what you were looking for.';
     if (status == 409) return 'That already exists.';
     if (status == 429) return 'Too many attempts. Please wait a moment.';
-    if (status >= 500) return 'Our servers are having a moment. Try again shortly.';
+    if (status >= 500) {
+      return 'Our servers are having a moment. Try again shortly.';
+    }
     return 'Something went wrong. Please try again.';
   }
 }

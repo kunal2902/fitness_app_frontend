@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../services/api_nutrition_repository.dart';
+import '../../store/app_store.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bottom_nav.dart';
+import '../../widgets/nutrition_scope.dart';
 import '../assistance/assistance_screen.dart';
 import '../home/home_screen.dart';
 import '../nutrition/nutrition_screen.dart';
@@ -68,21 +72,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      // Android back on any tab other than Home returns to Home rather than
-      // dropping the user out of the app.
-      canPop: _index == 0,
-      onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) return;
-        setState(() => _index = 0);
-      },
-      child: Scaffold(
-        backgroundColor: context.palette.bg,
-        body: IndexedStack(index: _index, children: _tabs),
-        bottomNavigationBar: AppBottomNav(
-          destinations: _destinations,
-          currentIndex: _index,
-          onSelected: (int i) => setState(() => _index = i),
+    final AppStore store = context.watch<AppStore>();
+    final String? sessionId = store.isAuthenticated ? store.user?.id : null;
+    return NutritionScope(
+      sessionId: sessionId,
+      repositoryFactory: () => ApiNutritionRepository(
+        isSessionCurrent: () =>
+            store.isAuthenticated && store.user?.id == sessionId,
+      ),
+      child: PopScope(
+        // Android back on any tab other than Home returns to Home rather than
+        // dropping the user out of the app.
+        canPop: _index == 0,
+        onPopInvokedWithResult: (bool didPop, Object? result) {
+          if (didPop) return;
+          setState(() => _index = 0);
+        },
+        child: Scaffold(
+          backgroundColor: context.palette.bg,
+          body: IndexedStack(index: _index, children: _tabs),
+          bottomNavigationBar: AppBottomNav(
+            destinations: _destinations,
+            currentIndex: _index,
+            onSelected: (int i) => setState(() => _index = i),
+          ),
         ),
       ),
     );

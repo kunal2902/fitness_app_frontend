@@ -37,6 +37,21 @@ class ApiEndpoints {
   static const String devices = '/devices';
   static String device(String token) => '/devices/$token';
 
+  // Nutrition — food reference data and the meal diary
+  static const String foodSearch = '/foods/search';
+
+  /// Accepts either a Mongo id or a stable `externalId` such as
+  /// `ifct:A011`. Both resolve server-side, which is what lets a bundled
+  /// local corpus and the API be swapped without touching call sites.
+  static String food(String idOrExternalId) => '/foods/$idOrExternalId';
+
+  static const String nutritionLogs = '/nutrition/logs';
+  static String nutritionLog(String id) => '/nutrition/logs/$id';
+  static const String nutritionSummary = '/nutrition/summary';
+  static const String nutritionTargets = '/nutrition/targets';
+  static const String nutritionRecommendation =
+      '/nutrition/targets/recommendation';
+
   // Reserved for later phases — listed so the surface area is visible.
   // NOTE: none of these are mounted on the backend yet; calling one now
   // returns 404.
