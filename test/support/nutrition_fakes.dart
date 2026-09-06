@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:fitness_app/models/food_log.dart';
 import 'package:fitness_app/models/nutrition_models.dart';
 import 'package:fitness_app/models/nutrition_target_setup.dart';
+import 'package:fitness_app/models/saved_meal.dart';
 import 'package:fitness_app/services/nutrition_repository.dart';
 import 'package:fitness_app/services/nutrition_service.dart';
 
@@ -32,6 +33,16 @@ const Food sampleFood = Food(
 );
 const NutritionTarget sampleTarget =
     NutritionTarget(kcal: 2000, proteinG: 100, carbsG: 250, fatG: 65);
+
+SavedMeal sampleSavedMeal({String id = 'cccccccccccccccccccccccc'}) =>
+    SavedMeal(
+      id: id,
+      name: 'Regular lunch',
+      defaultMealType: MealType.lunch,
+      items: sampleLog().items,
+      totals: sampleMacros,
+      useCount: 0,
+    );
 
 FoodLog sampleLog({String date = diaryDay, String clientId = 'meal-1'}) =>
     FoodLog(
@@ -93,6 +104,14 @@ class FakeNutritionRepository implements NutritionRepository {
   final List<MealLogEdit> updates = <MealLogEdit>[];
   final List<String> deletes = <String>[];
   final List<NutritionTargetEdit> targetUpdates = <NutritionTargetEdit>[];
+  final List<String> savedMealReads = <String>[];
+  final List<String> savedMealDeletes = <String>[];
+  final List<({String name, String date, MealType mealType})> savedMealSaves =
+      <({String name, String date, MealType mealType})>[];
+  final List<({String mealId, String date, MealType mealType, String clientId})>
+      savedMealLogs =
+      <({String mealId, String date, MealType mealType, String clientId})>[];
+  List<SavedMeal> savedMeals = <SavedMeal>[sampleSavedMeal()];
   Future<FoodSearchResult> Function(String)? onSearch;
   Future<List<FoodLog>> Function(String)? onList;
   Future<NutritionSummary> Function(String)? onSummary;
@@ -173,6 +192,70 @@ class FakeNutritionRepository implements NutritionRepository {
     deletes.add(logId);
     if (onDelete != null) await onDelete!(logId);
     notify(NutritionChange(dates: <String>{date}));
+  }
+
+  @override
+  Future<List<SavedMeal>> listSavedMeals() async {
+    savedMealReads.add('list');
+    return List<SavedMeal>.unmodifiable(savedMeals);
+  }
+
+  @override
+  Future<SavedMeal> saveMealFromDiary({
+    required String name,
+    required String sourceDate,
+    required MealType sourceMealType,
+  }) async {
+    savedMealSaves.add(
+      (
+        name: name,
+        date: sourceDate,
+        mealType: sourceMealType,
+      ),
+    );
+    final SavedMeal meal = SavedMeal(
+      id: 'saved-${savedMealSaves.length}',
+      name: name,
+      defaultMealType: sourceMealType,
+      items: sampleLog().items,
+      totals: sampleMacros,
+      useCount: 0,
+    );
+    savedMeals = <SavedMeal>[meal, ...savedMeals];
+    return meal;
+  }
+
+  @override
+  Future<void> deleteSavedMeal(String mealId) async {
+    savedMealDeletes.add(mealId);
+    savedMeals =
+        savedMeals.where((SavedMeal meal) => meal.id != mealId).toList();
+  }
+
+  @override
+  Future<MealLogResult> logSavedMeal({
+    required String mealId,
+    required String date,
+    required MealType mealType,
+    required String clientId,
+  }) async {
+    savedMealLogs.add(
+      (
+        mealId: mealId,
+        date: date,
+        mealType: mealType,
+        clientId: clientId,
+      ),
+    );
+    final FoodLog log = FoodLog(
+      id: 'saved-log-${savedMealLogs.length}',
+      date: date,
+      mealType: mealType,
+      clientId: clientId,
+      items: sampleLog().items,
+    );
+    notify(NutritionChange(dates: <String>{date}));
+    return (log: log, duplicate: false);
   }
 
   @override

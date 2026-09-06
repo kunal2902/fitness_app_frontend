@@ -10,6 +10,7 @@ import '../../cards/meal_section_card.dart';
 import '../../cards/nutrition_totals_card.dart';
 import '../../models/food_log.dart';
 import '../../models/nutrition_models.dart';
+import '../../services/nutrition_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/diary_date.dart';
 import '../../widgets/app_snackbar.dart';
@@ -160,6 +161,25 @@ class _NutritionScreenState extends State<NutritionScreen>
         .add(MealLogDeleteRequested(logId: log.id, date: log.date));
   }
 
+  Future<void> _saveMeal(MealType mealType) async {
+    final String? name = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) =>
+          _SaveMealNameDialog(mealType: mealType),
+    );
+    if (name == null || !mounted) return;
+    try {
+      await context.read<NutritionRepository>().saveMealFromDiary(
+            name: name,
+            sourceDate: _date,
+            sourceMealType: mealType,
+          );
+      if (mounted) AppSnackbar.success(context, '$name saved for reuse');
+    } catch (error) {
+      if (mounted) AppSnackbar.error(context, nutritionFailure(error).message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
@@ -267,6 +287,7 @@ class _NutritionScreenState extends State<NutritionScreen>
             onAdd: _addFood,
             onEditItem: _editItem,
             onDeleteLog: _confirmDelete,
+            onSave: _saveMeal,
           ),
         ],
       ),
@@ -365,12 +386,14 @@ class _MealsSection extends StatelessWidget {
     required this.onAdd,
     required this.onEditItem,
     required this.onDeleteLog,
+    required this.onSave,
   });
 
   final String date;
   final void Function(MealType? mealType) onAdd;
   final void Function(FoodLog log, int itemIndex) onEditItem;
   final void Function(FoodLog log) onDeleteLog;
+  final void Function(MealType mealType) onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -420,11 +443,83 @@ class _MealsSection extends StatelessWidget {
                 onAdd: () => onAdd(meal),
                 onEditItem: onEditItem,
                 onDeleteLog: onDeleteLog,
+                onSave: meal == null || (grouped[meal]?.isEmpty ?? true)
+                    ? null
+                    : () => onSave(meal),
               ),
             ],
           ],
         );
       },
+    );
+  }
+}
+
+class _SaveMealNameDialog extends StatefulWidget {
+  const _SaveMealNameDialog({required this.mealType});
+
+  final MealType mealType;
+
+  @override
+  State<_SaveMealNameDialog> createState() => _SaveMealNameDialogState();
+}
+
+class _SaveMealNameDialogState extends State<_SaveMealNameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: 'My ${widget.mealType.label}');
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final String name = _controller.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Enter a name for this meal');
+      return;
+    }
+    Navigator.of(context).pop(name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Save this meal'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'All foods currently under ${widget.mealType.label.toLowerCase()} '
+            'will be saved together.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLength: 80,
+            textInputAction: TextInputAction.done,
+            onChanged: (_) {
+              if (_error != null) setState(() => _error = null);
+            },
+            onSubmitted: (_) => _save(),
+            decoration: InputDecoration(
+              labelText: 'Meal name',
+              errorText: _error,
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(onPressed: _save, child: const Text('Save meal')),
+      ],
     );
   }
 }
@@ -534,8 +629,8 @@ class _StaleStrip extends StatelessWidget {
           Expanded(
             child: Text(
               'Could not refresh — showing your last saved copy.',
-              style: context.text.bodySmall
-                  ?.copyWith(color: palette.textTertiary),
+              style:
+                  context.text.bodySmall?.copyWith(color: palette.textTertiary),
             ),
           ),
           TextButton(

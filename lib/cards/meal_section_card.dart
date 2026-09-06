@@ -19,6 +19,7 @@ class MealSectionCard extends StatelessWidget {
     required this.onAdd,
     required this.onEditItem,
     required this.onDeleteLog,
+    this.onSave,
     super.key,
   });
 
@@ -31,6 +32,7 @@ class MealSectionCard extends StatelessWidget {
   final VoidCallback onAdd;
   final void Function(FoodLog log, int itemIndex) onEditItem;
   final void Function(FoodLog log) onDeleteLog;
+  final VoidCallback? onSave;
 
   String get _title => mealType?.label ?? 'Other';
 
@@ -71,13 +73,21 @@ class MealSectionCard extends StatelessWidget {
                         ?.copyWith(color: palette.textSecondary),
                   ),
                 ),
+              if (!isEmpty && onSave != null)
+                IconButton(
+                  onPressed: onSave,
+                  tooltip: 'Save $_title for reuse',
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  color: palette.accent,
+                  constraints:
+                      const BoxConstraints(minWidth: 44, minHeight: 44),
+                ),
               IconButton(
                 onPressed: onAdd,
                 tooltip: 'Add to $_title',
                 icon: const Icon(Icons.add_rounded),
                 color: palette.accent,
-                constraints:
-                    const BoxConstraints(minWidth: 44, minHeight: 44),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ],
           ),

@@ -6,6 +6,7 @@ import '../models/api_exception.dart';
 import '../models/food_log.dart';
 import '../models/nutrition_models.dart';
 import '../models/nutrition_target_setup.dart';
+import '../models/saved_meal.dart';
 import '../utils/diary_date.dart';
 import 'nutrition_repository.dart';
 import 'nutrition_service.dart';
@@ -195,6 +196,88 @@ class ApiNutritionRepository implements NutritionRepository {
       }
     }
     _changed(change);
+  }
+
+  @override
+  Future<List<SavedMeal>> listSavedMeals() async {
+    final List<SavedMeal> meals = await _request(
+      (CancelToken token) => _service.listSavedMeals(cancelToken: token),
+    );
+    if (meals.any((SavedMeal meal) => meal.id.isEmpty || meal.items.isEmpty)) {
+      throw _badEcho('saved meal');
+    }
+    return List<SavedMeal>.unmodifiable(meals);
+  }
+
+  @override
+  Future<SavedMeal> saveMealFromDiary({
+    required String name,
+    required String sourceDate,
+    required MealType sourceMealType,
+  }) async {
+    requireDiaryDate(sourceDate);
+    if (name.trim().isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Enter a name for this meal');
+    }
+    final SavedMeal meal = await _request(
+      (CancelToken token) => _service.saveMealFromDiary(
+        name: name,
+        sourceDate: sourceDate,
+        sourceMealType: sourceMealType,
+        cancelToken: token,
+      ),
+    );
+    if (meal.id.isEmpty || meal.items.isEmpty) throw _badEcho('saved meal');
+    return meal;
+  }
+
+  @override
+  Future<void> deleteSavedMeal(String mealId) async {
+    try {
+      await _request(
+        (CancelToken token) =>
+            _service.deleteSavedMeal(mealId, cancelToken: token),
+      );
+    } catch (error) {
+      // Deleting an already-deleted template has reached the desired state.
+      if (error is! ApiException ||
+          !error.isNotFound ||
+          error.code != 'NO_SAVED_MEAL') {
+        rethrow;
+      }
+    }
+  }
+
+  @override
+  Future<MealLogResult> logSavedMeal({
+    required String mealId,
+    required String date,
+    required MealType mealType,
+    required String clientId,
+  }) async {
+    requireDiaryDate(date);
+    final NutritionChange change = NutritionChange(dates: <String>{date});
+    try {
+      final MealLogResult result = await _request(
+        (CancelToken token) => _service.logSavedMeal(
+          mealId: mealId,
+          date: date,
+          mealType: mealType,
+          clientId: clientId,
+          cancelToken: token,
+        ),
+      );
+      if (result.log.id.isEmpty ||
+          result.log.date != date ||
+          result.log.clientId != clientId) {
+        throw _badEcho('saved meal log identity');
+      }
+      _changed(change);
+      return result;
+    } catch (error) {
+      _reconcileUncertain(error, change);
+      rethrow;
+    }
   }
 
   @override

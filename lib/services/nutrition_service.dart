@@ -7,6 +7,7 @@ import '../models/api_exception.dart';
 import '../models/food_log.dart';
 import '../models/nutrition_models.dart';
 import '../models/nutrition_target_setup.dart';
+import '../models/saved_meal.dart';
 import '../utils/diary_date.dart';
 import '../utils/nutrition_math.dart';
 import 'api_client.dart';
@@ -338,6 +339,73 @@ class NutritionService {
     await _client.delete(
       ApiEndpoints.nutritionLog(logId),
       cancelToken: cancelToken,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Saved meals
+  // -------------------------------------------------------------------------
+
+  Future<List<SavedMeal>> listSavedMeals({CancelToken? cancelToken}) async {
+    final Map<String, dynamic> json = await _client.get(
+      ApiEndpoints.savedMeals,
+      cancelToken: cancelToken,
+    );
+    final Object? raw = json['meals'];
+    if (raw is! List) throw _badShape('meals');
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(SavedMeal.fromJson)
+        .toList();
+  }
+
+  Future<SavedMeal> saveMealFromDiary({
+    required String name,
+    required String sourceDate,
+    required MealType sourceMealType,
+    CancelToken? cancelToken,
+  }) async {
+    final Map<String, dynamic> json = await _client.post(
+      ApiEndpoints.savedMeals,
+      cancelToken: cancelToken,
+      body: <String, dynamic>{
+        'name': name.trim(),
+        'sourceDate': sourceDate,
+        'sourceMealType': sourceMealType.apiValue,
+      },
+    );
+    return SavedMeal.fromJson(_object(json, 'meal'));
+  }
+
+  Future<void> deleteSavedMeal(
+    String mealId, {
+    CancelToken? cancelToken,
+  }) async {
+    await _client.delete(
+      ApiEndpoints.savedMeal(mealId),
+      cancelToken: cancelToken,
+    );
+  }
+
+  Future<({FoodLog log, bool duplicate})> logSavedMeal({
+    required String mealId,
+    required String date,
+    required MealType mealType,
+    required String clientId,
+    CancelToken? cancelToken,
+  }) async {
+    final Map<String, dynamic> json = await _client.post(
+      ApiEndpoints.logSavedMeal(mealId),
+      cancelToken: cancelToken,
+      body: <String, dynamic>{
+        'date': date,
+        'mealType': mealType.apiValue,
+        'clientId': clientId,
+      },
+    );
+    return (
+      log: FoodLog.fromJson(_object(json, 'log')),
+      duplicate: json['duplicate'] as bool? ?? false,
     );
   }
 

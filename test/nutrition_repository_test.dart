@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:fitness_app/config/api_endpoints.dart';
 import 'package:fitness_app/models/api_exception.dart';
 import 'package:fitness_app/models/enums.dart';
+import 'package:fitness_app/models/nutrition_models.dart';
 import 'package:fitness_app/models/nutrition_target_setup.dart';
 import 'package:fitness_app/services/api_client.dart';
 import 'package:fitness_app/services/api_nutrition_repository.dart';
@@ -38,6 +39,19 @@ Map<String, dynamic> logJson({
           'macros': sampleMacros.toJson(),
         },
       ],
+    };
+
+Map<String, dynamic> savedMealJson({
+  String id = 'cccccccccccccccccccccccc',
+  String name = 'Regular lunch',
+}) =>
+    <String, dynamic>{
+      'id': id,
+      'name': name,
+      'defaultMealType': 'lunch',
+      'items': logJson()['items'],
+      'totals': sampleMacros.toJson(),
+      'useCount': 0,
     };
 
 ResponseBody envelope(Map<String, dynamic> data) => ResponseBody.fromString(
@@ -89,6 +103,27 @@ class NutritionHttpAdapter implements HttpClientAdapter {
             date: body['date'] as String,
             clientId: body['clientId'] as String,
           ),
+          'duplicate': false,
+        });
+      case ('GET', ApiEndpoints.savedMeals):
+        return envelope(<String, dynamic>{
+          'meals': <Map<String, dynamic>>[savedMealJson()],
+        });
+      case ('POST', ApiEndpoints.savedMeals):
+        final Map<String, dynamic> body = options.data as Map<String, dynamic>;
+        return envelope(<String, dynamic>{
+          'meal': savedMealJson(name: body['name'] as String),
+        });
+      case ('POST', '/nutrition/saved-meals/cccccccccccccccccccccccc/log'):
+        final Map<String, dynamic> body = options.data as Map<String, dynamic>;
+        return envelope(<String, dynamic>{
+          'log': <String, dynamic>{
+            ...logJson(
+              date: body['date'] as String,
+              clientId: body['clientId'] as String,
+            ),
+            'mealType': body['mealType'],
+          },
           'duplicate': false,
         });
       case ('GET', ApiEndpoints.nutritionSummary):
@@ -272,6 +307,52 @@ void main() {
         .updateTargets(const NutritionTargetEdit(kcal: 2000, setup: setup));
     expect(saved.setup, setup);
     expect((adapter.requests.last.data as Map)['setup'], setup.toJson());
+  });
+
+  test('saved meal endpoints preserve payloads and invalidate only reused day',
+      () async {
+    final saved = await repository.listSavedMeals();
+    expect(saved.single.name, 'Regular lunch');
+
+    final created = await repository.saveMealFromDiary(
+      name: '  Workday lunch  ',
+      sourceDate: diaryDay,
+      sourceMealType: MealType.lunch,
+    );
+    expect(created.name, 'Workday lunch');
+    await repository.deleteSavedMeal(saved.single.id);
+    final result = await repository.logSavedMeal(
+      mealId: saved.single.id,
+      date: previousDiaryDay,
+      mealType: MealType.dinner,
+      clientId: 'reuse-1',
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(result.log.date, previousDiaryDay);
+    expect(result.log.mealType, MealType.dinner);
+    expect(
+      adapter.requests
+          .map((RequestOptions request) => '${request.method} ${request.path}'),
+      <String>[
+        'GET /nutrition/saved-meals',
+        'POST /nutrition/saved-meals',
+        'DELETE /nutrition/saved-meals/${saved.single.id}',
+        'POST /nutrition/saved-meals/${saved.single.id}/log',
+      ],
+    );
+    expect(adapter.requests[1].data, <String, dynamic>{
+      'name': 'Workday lunch',
+      'sourceDate': diaryDay,
+      'sourceMealType': 'lunch',
+    });
+    expect(adapter.requests[3].data, <String, dynamic>{
+      'date': previousDiaryDay,
+      'mealType': 'dinner',
+      'clientId': 'reuse-1',
+    });
+    expect(changes, hasLength(1));
+    expect(changes.single.dates, <String>{previousDiaryDay});
   });
 
   test(

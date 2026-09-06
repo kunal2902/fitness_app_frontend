@@ -4,8 +4,10 @@ import 'package:fitness_app/blocs/nutrition/food_search_bloc.dart';
 import 'package:fitness_app/blocs/nutrition/meal_log_bloc.dart';
 import 'package:fitness_app/blocs/nutrition/nutrition_summary_bloc.dart';
 import 'package:fitness_app/models/api_exception.dart';
+import 'package:fitness_app/models/food_log.dart';
 import 'package:fitness_app/models/nutrition_models.dart';
 import 'package:fitness_app/screens/nutrition/food_search_screen.dart';
+import 'package:fitness_app/screens/nutrition/nutrition_screen.dart';
 import 'package:fitness_app/screens/nutrition/portion_picker_screen.dart';
 import 'package:fitness_app/services/nutrition_repository.dart';
 import 'package:fitness_app/theme/app_theme.dart';
@@ -51,6 +53,38 @@ void main() {
       ),
     );
     await tester.pump();
+    return repository;
+  }
+
+  Future<FakeNutritionRepository> openDiary(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(600, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final FakeNutritionRepository repository = FakeNutritionRepository()
+      ..onList = (String date) async => <FoodLog>[sampleLog(date: date)];
+    final MealLogBloc logs = MealLogBloc(repository: repository);
+    final NutritionSummaryBloc summary =
+        NutritionSummaryBloc(repository: repository);
+    addTearDown(() async {
+      await logs.close();
+      await summary.close();
+      repository.dispose();
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: RepositoryProvider<NutritionRepository>.value(
+          value: repository,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider<MealLogBloc>.value(value: logs),
+              BlocProvider<NutritionSummaryBloc>.value(value: summary),
+            ],
+            child: const NutritionScreen(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
     return repository;
   }
 
@@ -179,5 +213,64 @@ void main() {
     expect(repository.creates.last.clientId, isNot(failedClientId));
     expect(repository.creates.last.items.single.grams, 150);
     expect(find.byType(PortionPickerScreen), findsNothing);
+  });
+
+  testWidgets('a diary meal can be named and saved as one reusable template',
+      (WidgetTester tester) async {
+    final FakeNutritionRepository repository = await openDiary(tester);
+
+    await tester.tap(find.byTooltip('Save Lunch for reuse'));
+    await tester.pumpAndSettle();
+    expect(find.text('Save this meal'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Workday lunch');
+    await tester.tap(find.text('Save meal'));
+    await tester.pumpAndSettle();
+
+    expect(repository.savedMealSaves, hasLength(1));
+    expect(repository.savedMealSaves.single.name, 'Workday lunch');
+    expect(repository.savedMealSaves.single.mealType, MealType.lunch);
+    expect(repository.savedMealSaves.single.date, repository.diaryReads.first);
+    expect(find.text('Workday lunch saved for reuse'), findsOneWidget);
+  });
+
+  testWidgets('a saved meal is reusable from search on the selected diary day',
+      (WidgetTester tester) async {
+    final FakeNutritionRepository repository = await openSearch(tester);
+
+    await tester.tap(find.text('Saved meals'));
+    await tester.pumpAndSettle();
+    expect(find.text('Regular lunch'), findsOneWidget);
+
+    await tester.tap(find.text('Add to breakfast'));
+    await tester.pumpAndSettle();
+
+    expect(repository.savedMealLogs, hasLength(1));
+    final operation = repository.savedMealLogs.single;
+    expect(operation.mealId, sampleSavedMeal().id);
+    expect(operation.date, diaryDay);
+    expect(operation.mealType, MealType.breakfast);
+    expect(operation.clientId, isNotEmpty);
+    expect(find.text('Regular lunch added to breakfast'), findsOneWidget);
+  });
+
+  testWidgets('deleting a template explains that diary history is preserved',
+      (WidgetTester tester) async {
+    final FakeNutritionRepository repository = await openSearch(tester);
+
+    await tester.tap(find.text('Saved meals'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete Regular lunch'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Food already logged in your diary will not change'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository.savedMealDeletes, <String>[sampleSavedMeal().id]);
+    expect(find.text('No saved meals yet'), findsOneWidget);
   });
 }

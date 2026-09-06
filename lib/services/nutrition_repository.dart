@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show CancelToken;
 import '../models/api_exception.dart';
 import '../models/food_log.dart';
 import '../models/nutrition_models.dart';
+import '../models/saved_meal.dart';
 import '../models/nutrition_target_setup.dart';
 import '../utils/diary_date.dart';
 import 'nutrition_service.dart';
@@ -111,6 +112,19 @@ abstract interface class NutritionRepository {
   Future<MealLogResult> createLog(MealLogDraft draft);
   Future<FoodLog> updateLog(MealLogEdit edit);
   Future<void> deleteLog(String logId, {required String date});
+  Future<List<SavedMeal>> listSavedMeals();
+  Future<SavedMeal> saveMealFromDiary({
+    required String name,
+    required String sourceDate,
+    required MealType sourceMealType,
+  });
+  Future<void> deleteSavedMeal(String mealId);
+  Future<MealLogResult> logSavedMeal({
+    required String mealId,
+    required String date,
+    required MealType mealType,
+    required String clientId,
+  });
   Future<NutritionSummary> summary(String date);
   Future<NutritionTarget?> getTargets();
   Future<NutritionTarget> updateTargets(NutritionTargetEdit edit);

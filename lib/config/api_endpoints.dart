@@ -47,6 +47,9 @@ class ApiEndpoints {
 
   static const String nutritionLogs = '/nutrition/logs';
   static String nutritionLog(String id) => '/nutrition/logs/$id';
+  static const String savedMeals = '/nutrition/saved-meals';
+  static String savedMeal(String id) => '/nutrition/saved-meals/$id';
+  static String logSavedMeal(String id) => '/nutrition/saved-meals/$id/log';
   static const String nutritionSummary = '/nutrition/summary';
   static const String nutritionTargets = '/nutrition/targets';
   static const String nutritionRecommendation =

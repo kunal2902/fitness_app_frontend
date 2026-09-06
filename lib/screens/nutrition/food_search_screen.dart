@@ -12,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_snackbar.dart';
 import 'nutrition_navigation.dart';
 import 'portion_picker_screen.dart';
+import 'saved_meals_screen.dart';
 
 /// Find a food and open its portion picker.
 ///
@@ -85,6 +86,14 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     );
   }
 
+  Future<void> _openSavedMeals() async {
+    final String? message = await pushNutritionRoute<String>(
+      context,
+      SavedMealsScreen(date: widget.date, mealType: widget.mealType),
+    );
+    if (message != null && mounted) AppSnackbar.success(context, message);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
@@ -97,6 +106,14 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               ? 'Add food'
               : 'Add to ${widget.mealType!.label.toLowerCase()}',
         ),
+        actions: <Widget>[
+          TextButton.icon(
+            onPressed: _openSavedMeals,
+            icon: const Icon(Icons.bookmarks_outlined),
+            label: const Text('Saved meals'),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
       // Confirmation lives here, not on the summary screen: the user is
       // sent straight back after adding, and a snackbar fired from a screen
