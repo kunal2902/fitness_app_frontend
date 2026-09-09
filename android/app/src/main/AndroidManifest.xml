@@ -6,6 +6,14 @@
          internet at all and every request fails. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- ================= Workout tracking =================
+         A user-started workout is foreground location: the service below
+         keeps an ongoing notification visible while the screen is off.
+         ACCESS_BACKGROUND_LOCATION is deliberately absent. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+
     <!-- Profile picture capture, and the camera for video calls.
          image_picker uses the system photo picker for the gallery, which
          needs no permission on Android 13+, but taking a new photo does. -->
@@ -68,6 +76,9 @@
     <uses-feature
         android:name="android.hardware.microphone"
         android:required="false"/>
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false"/>
 
     <application
         android:label="Fitness App"
@@ -115,6 +126,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="fitness_app_calls"/>
+
+        <service
+            android:name=".TrackingService"
+            android:foregroundServiceType="location"
+            android:exported="false"
+            android:stopWithTask="false"/>
     </application>
 
     <!-- Required to query activities that can process text, see:
