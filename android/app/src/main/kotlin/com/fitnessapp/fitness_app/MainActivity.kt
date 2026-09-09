@@ -1,12 +1,19 @@
 package com.fitnessapp.fitness_app
 
+import android.Manifest
 import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,9 +36,14 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val CHANNEL = "com.fitnessapp/call_window"
 
+        const val TRACKING_CHANNEL = "com.fitnessapp/tracking_recorder"
+        const val TRACKING_PERMISSION_REQUEST = 2208
+
         /** Must match `default_notification_channel_id` in the manifest. */
         const val CALL_CHANNEL_ID = "fitness_app_calls"
     }
+
+    private var trackingPermissionResult: MethodChannel.Result? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +115,185 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            TRACKING_CHANNEL,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "permissionStatus" -> result.success(trackingPermissionState())
+                "requestPermissions" -> requestTrackingPermissions(result)
+                "openAppSettings" -> {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:$packageName"),
+                        ),
+                    )
+                    result.success(null)
+                }
+                "openLocationSettings" -> {
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    result.success(null)
+                }
+                "getSession" -> result.success(TrackingStore.currentMap(this))
+                "getSessionPoints" -> {
+                    val sessionId = call.argument<String>("sessionId")?.trim()
+                    if (sessionId.isNullOrEmpty()) {
+                        result.error(
+                            "BAD_SESSION_ID",
+                            "A session id is required to read route points.",
+                            null,
+                        )
+                    } else {
+                        result.success(TrackingDatabase.get(this).listPoints(sessionId))
+                    }
+                }
+                "start" -> dispatchTrackingCommand(TrackingService.ACTION_START, result)
+                "pause" -> dispatchTrackingCommand(TrackingService.ACTION_PAUSE, result)
+                "resume" -> dispatchTrackingCommand(TrackingService.ACTION_RESUME, result)
+                "stop" -> dispatchTrackingCommand(TrackingService.ACTION_STOP, result)
+                "discard" -> dispatchTrackingCommand(TrackingService.ACTION_DISCARD, result)
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun requestTrackingPermissions(result: MethodChannel.Result) {
+        if (trackingPermissionResult != null) {
+            result.error(
+                "PERMISSION_REQUEST_ACTIVE",
+                "A permission request is already open.",
+                null,
+            )
+            return
+        }
+
+        val permissions = mutableListOf<String>()
+        val needsLocation =
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED
+        if (needsLocation) {
+            permissions += Manifest.permission.ACCESS_FINE_LOCATION
+            permissions += Manifest.permission.ACCESS_COARSE_LOCATION
+        }
+        val needsNotifications =
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+        if (needsNotifications) permissions += Manifest.permission.POST_NOTIFICATIONS
+
+        if (permissions.isEmpty()) {
+            result.success(trackingPermissionState())
+            return
+        }
+
+        TrackingStore.markPermissionRequests(
+            this,
+            location = needsLocation,
+            notifications = needsNotifications,
+        )
+        trackingPermissionResult = result
+        requestPermissions(permissions.toTypedArray(), TRACKING_PERMISSION_REQUEST)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != TRACKING_PERMISSION_REQUEST) return
+        trackingPermissionResult?.success(trackingPermissionState())
+        trackingPermissionResult = null
+    }
+
+    private fun trackingPermissionState(): Map<String, Any> {
+        val fine =
+            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        val coarse =
+            checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        val location = when {
+            fine -> "precise"
+            coarse -> "approximate"
+            !TrackingStore.hasAskedLocation(this) -> "notRequested"
+            shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) ->
+                "denied"
+            else -> "deniedForever"
+        }
+
+        val notifications = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            "notRequired"
+        } else if (
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            "granted"
+        } else if (!TrackingStore.hasAskedNotifications(this)) {
+            "notRequested"
+        } else if (
+            shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+        ) {
+            "denied"
+        } else {
+            "deniedForever"
+        }
+
+        val manager = getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        val locationEnabled =
+            manager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                manager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+        return mapOf(
+            "supported" to true,
+            "locationServicesEnabled" to locationEnabled,
+            "location" to location,
+            "notifications" to notifications,
+        )
+    }
+
+    private fun dispatchTrackingCommand(action: String, result: MethodChannel.Result) {
+        if (action == TrackingService.ACTION_START) {
+            val permission = trackingPermissionState()
+            if (permission["location"] != "precise") {
+                result.error(
+                    "PRECISE_LOCATION_REQUIRED",
+                    "Allow precise location before starting a workout.",
+                    null,
+                )
+                return
+            }
+            if (permission["locationServicesEnabled"] != true) {
+                result.error(
+                    "LOCATION_SERVICES_DISABLED",
+                    "Turn on phone location before starting a workout.",
+                    null,
+                )
+                return
+            }
+            if (permission["notifications"] !in setOf("granted", "notRequired")) {
+                result.error(
+                    "NOTIFICATIONS_REQUIRED",
+                    "Allow workout notifications before starting a workout.",
+                    null,
+                )
+                return
+            }
+        } else if (TrackingStore.read(this) == null) {
+            result.error("NO_ACTIVE_WORKOUT", "There is no active workout.", null)
+            return
+        }
+
+        val intent = Intent(this, TrackingService::class.java).setAction(action)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        // Service commands execute on this same main looper immediately after
+        // the channel callback returns. Reply once the persisted state settles.
+        Handler(Looper.getMainLooper()).postDelayed({ result.success(null) }, 80)
     }
 
     private fun isDeviceLocked(): Boolean {
@@ -149,6 +340,12 @@ class MainActivity : FlutterActivity() {
         // but the failure mode it guards against is "the app shows over
         // your lock screen forever", which is worth two lines.
         setShowOverLockScreen(false)
+        trackingPermissionResult?.error(
+            "ACTIVITY_CLOSED",
+            "The permission screen closed before it completed.",
+            null,
+        )
+        trackingPermissionResult = null
         super.onDestroy()
     }
 }
