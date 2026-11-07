@@ -31,20 +31,54 @@ class RouteBounds extends Equatable {
   /// and returning a zero-size one at (0, 0) would point the map at the ocean
   /// off Ghana.
   static RouteBounds? around(Iterable<RouteCoordinate> coordinates) {
-    double? minLat, minLng, maxLat, maxLng;
+    double? minLat, maxLat;
+    final List<double> longitudes = <double>[];
     for (final RouteCoordinate c in coordinates) {
       minLat = minLat == null || c.latitude < minLat ? c.latitude : minLat;
       maxLat = maxLat == null || c.latitude > maxLat ? c.latitude : maxLat;
-      minLng = minLng == null || c.longitude < minLng ? c.longitude : minLng;
-      maxLng = maxLng == null || c.longitude > maxLng ? c.longitude : maxLng;
+      longitudes.add(_normaliseLongitude(c.longitude));
     }
     if (minLat == null) return null;
+    longitudes.sort();
+
+    // Exclude the largest empty arc. For a route crossing ±180 this returns
+    // west > east, which MapLibre understands as a wrapped bounding box.
+    double west = longitudes.first;
+    double east = longitudes.last;
+    if (longitudes.length > 1) {
+      double largestGap = -1;
+      int gapStart = 0;
+      for (int i = 0; i < longitudes.length; i++) {
+        final double current = longitudes[i];
+        final double next = i == longitudes.length - 1
+            ? longitudes.first + 360
+            : longitudes[i + 1];
+        final double gap = next - current;
+        if (gap > largestGap) {
+          largestGap = gap;
+          gapStart = i;
+        }
+      }
+      west = longitudes[(gapStart + 1) % longitudes.length];
+      east = longitudes[gapStart];
+    }
     return RouteBounds(
       minLatitude: minLat,
-      minLongitude: minLng!,
+      minLongitude: west,
       maxLatitude: maxLat!,
-      maxLongitude: maxLng!,
+      maxLongitude: east,
     );
+  }
+
+  static double _normaliseLongitude(double value) {
+    double result = value;
+    while (result > 180) {
+      result -= 360;
+    }
+    while (result < -180) {
+      result += 360;
+    }
+    return result;
   }
 
   final double minLatitude;
@@ -52,10 +86,19 @@ class RouteBounds extends Equatable {
   final double maxLatitude;
   final double maxLongitude;
 
-  RouteCoordinate get centre => RouteCoordinate(
-        (minLatitude + maxLatitude) / 2,
-        (minLongitude + maxLongitude) / 2,
-      );
+  RouteCoordinate get centre {
+    double longitude;
+    if (minLongitude <= maxLongitude) {
+      longitude = (minLongitude + maxLongitude) / 2;
+    } else {
+      longitude = (minLongitude + maxLongitude + 360) / 2;
+      if (longitude > 180) longitude -= 360;
+    }
+    return RouteCoordinate(
+      (minLatitude + maxLatitude) / 2,
+      longitude,
+    );
+  }
 
   @override
   List<Object?> get props =>
@@ -169,8 +212,7 @@ class RouteElevation extends Equatable {
   final int sampleCount;
 
   @override
-  List<Object?> get props =>
-      <Object?>[gainM, lossM, minM, maxM, sampleCount];
+  List<Object?> get props => <Object?>[gainM, lossM, minM, maxM, sampleCount];
 }
 
 /// The finished result of reprocessing one recorded workout.

@@ -3,8 +3,12 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../models/api_exception.dart';
+import '../../models/route_models.dart';
 import '../../models/tracking_models.dart';
+import '../../services/tracking_activity_repository.dart';
 import '../../services/tracking_recorder.dart';
+import '../../utils/route_processor.dart';
 
 class TrackingRecorderState extends Equatable {
   const TrackingRecorderState({
@@ -12,6 +16,7 @@ class TrackingRecorderState extends Equatable {
     this.busy = false,
     this.permission = const TrackingPermissionSnapshot.unsupported(),
     this.session = const TrackingSessionSnapshot.idle(),
+    this.liveRoute,
     this.error,
     this.notice,
     this.revision = 0,
@@ -21,6 +26,7 @@ class TrackingRecorderState extends Equatable {
   final bool busy;
   final TrackingPermissionSnapshot permission;
   final TrackingSessionSnapshot session;
+  final ProcessedRoute? liveRoute;
   final String? error;
   final String? notice;
   final int revision;
@@ -30,6 +36,8 @@ class TrackingRecorderState extends Equatable {
     bool? busy,
     TrackingPermissionSnapshot? permission,
     TrackingSessionSnapshot? session,
+    ProcessedRoute? liveRoute,
+    bool clearLiveRoute = false,
     String? error,
     bool clearError = false,
     String? notice,
@@ -41,6 +49,7 @@ class TrackingRecorderState extends Equatable {
       busy: busy ?? this.busy,
       permission: permission ?? this.permission,
       session: session ?? this.session,
+      liveRoute: clearLiveRoute ? null : (liveRoute ?? this.liveRoute),
       error: clearError ? null : error ?? this.error,
       notice: clearNotice ? null : notice ?? this.notice,
       revision: bumpRevision ? revision + 1 : revision,
@@ -53,6 +62,7 @@ class TrackingRecorderState extends Equatable {
         busy,
         permission,
         session,
+        liveRoute,
         error,
         notice,
         revision,
@@ -60,11 +70,18 @@ class TrackingRecorderState extends Equatable {
 }
 
 class TrackingRecorderCubit extends Cubit<TrackingRecorderState> {
-  TrackingRecorderCubit({required TrackingRecorder recorder})
-      : _recorder = recorder,
+  TrackingRecorderCubit({
+    required TrackingRecorder recorder,
+    TrackingActivityRepository? activityRepository,
+    void Function()? onActivitySaved,
+  })  : _activityRepository = activityRepository,
+        _onActivitySaved = onActivitySaved,
+        _recorder = recorder,
         super(const TrackingRecorderState());
 
   final TrackingRecorder _recorder;
+  final TrackingActivityRepository? _activityRepository;
+  final void Function()? _onActivitySaved;
   Timer? _poller;
   bool _refreshing = false;
 
@@ -82,6 +99,20 @@ class TrackingRecorderCubit extends Cubit<TrackingRecorderState> {
       final TrackingPermissionSnapshot permission =
           await _recorder.permissionStatus();
       final TrackingSessionSnapshot session = await _recorder.currentSession();
+      ProcessedRoute? liveRoute = state.liveRoute;
+      if (session.isActive &&
+          session.sessionId != null &&
+          (liveRoute == null ||
+              session.pointCount != state.session.pointCount)) {
+        try {
+          final List<TrackingPoint> points =
+              await _recorder.points(session.sessionId!);
+          liveRoute = RouteProcessor.process(points);
+        } catch (_) {
+          // The preview is supplementary. A transient point-read failure must
+          // not stop the clock, controls, or native state from refreshing.
+        }
+      }
       if (isClosed) return;
       emit(
         state.copyWith(
@@ -89,6 +120,8 @@ class TrackingRecorderCubit extends Cubit<TrackingRecorderState> {
           busy: false,
           permission: permission,
           session: session,
+          liveRoute: liveRoute,
+          clearLiveRoute: !session.isActive,
           clearError: true,
         ),
       );
@@ -145,10 +178,70 @@ class TrackingRecorderCubit extends Cubit<TrackingRecorderState> {
         notice: 'Workout resumed',
       );
 
-  Future<void> stop() => _control(
+  Future<void> stop() async {
+    if (state.busy) return;
+    final TrackingSessionSnapshot active = state.session;
+    final String? sessionId = active.sessionId;
+    if (!active.isActive || sessionId == null) return;
+
+    // Without an API repository (mainly recorder-only tests), keep the Step 1
+    // local-stop behavior. Production always supplies the repository below.
+    if (_activityRepository == null) {
+      return _control(
         _recorder.stop,
         notice: 'Workout saved on this device',
       );
+    }
+
+    emit(state.copyWith(busy: true, clearError: true, clearNotice: true));
+    try {
+      // Freeze the route before reading its append-only points. If upload
+      // fails the paused native session remains recoverable and Finish can be
+      // retried with the same client id; the backend deduplicates that retry.
+      if (active.isRecording) await _recorder.pause();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      final List<TrackingPoint> points = await _recorder.points(sessionId);
+      final ProcessedRoute route = RouteProcessor.process(points);
+      await _activityRepository.saveProcessed(
+        route: route,
+        clientId: sessionId,
+      );
+      await _recorder.stop();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          busy: false,
+          session: const TrackingSessionSnapshot.idle(),
+          clearLiveRoute: true,
+          notice: 'Workout saved to your activities',
+          clearError: true,
+          bumpRevision: true,
+        ),
+      );
+      _syncPolling(false);
+      _onActivitySaved?.call();
+    } catch (error) {
+      TrackingSessionSnapshot session = active;
+      try {
+        session = await _recorder.currentSession();
+      } catch (_) {
+        // Preserve the last known state; the next poll can recover it.
+      }
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            busy: false,
+            session: session,
+            error: _message(error),
+            clearNotice: true,
+            bumpRevision: true,
+          ),
+        );
+        _syncPolling(session.isActive);
+      }
+    }
+  }
 
   Future<void> discard() => _control(
         _recorder.discard,
@@ -221,6 +314,7 @@ class TrackingRecorderCubit extends Cubit<TrackingRecorderState> {
 
   static String _message(Object error) {
     if (error is TrackingRecorderException) return error.message;
+    if (error is ApiException) return error.message;
     return 'The workout recorder could not complete that action.';
   }
 

@@ -68,12 +68,33 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     final AppStore store = AppStore.instance;
-    final bool hasDraft = store.onboardingDraft.answeredCount > 0;
+
+    if (store.onboardingDraft.answeredCount > 0) {
+      // Abandoned part-way through signup — drop them back where they were.
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.onboarding,
+        (Route<dynamic> route) => false,
+      );
+      return;
+    }
+
+    if (store.onboardingCompleted) {
+      // They have had an account on this device and are signed out, so what
+      // they want is sign-in. Sending them through the nine onboarding
+      // questions to reach the small "I already have an account" link at
+      // the end of them is not a sign-in flow.
+      //
+      // Welcome goes underneath so Login has something to go back to.
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRoutes.welcome,
+        (Route<dynamic> route) => false,
+      );
+      Navigator.of(context).pushNamed(AppRoutes.login);
+      return;
+    }
 
     Navigator.of(context).pushNamedAndRemoveUntil(
-      hasDraft || store.hasSeenWelcome
-          ? AppRoutes.onboarding
-          : AppRoutes.welcome,
+      store.hasSeenWelcome ? AppRoutes.onboarding : AppRoutes.welcome,
       (Route<dynamic> route) => false,
     );
   }

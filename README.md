@@ -144,6 +144,79 @@ Persisting on `onChanged` would write to disk on every frame.
 - New question → extend `OnboardingData`, add a step widget, register it in
   `OnboardingFlowScreen._steps`, and bump `OnboardingData.totalSteps`.
 
+### Reusable meals
+
+Any non-empty breakfast, lunch, dinner, or snack in the Nutrition diary can be
+saved with its bookmark action. **Saved meals** in food search lists the
+member's private templates and adds one to the currently selected diary day.
+When food search was opened from the general **Log food** button, the member is
+asked which meal slot to use. Reuse keeps one client id across retries, so a
+lost response cannot add the same meal twice; deleting a template never changes
+existing diary entries.
+
+### Outdoor workout recorder
+
+The Tracking tab now contains the Android Step 1 recorder: an explicit
+permission rationale, precise-location and notification flow, acquiring GPS,
+and start/pause/resume/finish/discard controls. A native location foreground
+service updates the ongoing duration/distance notification and commits every
+raw GPS fix to local SQLite as it arrives. It does not request
+`ACCESS_BACKGROUND_LOCATION`, upload routes, or calculate final pace/splits;
+those remain later tracking steps. See [TRACKING_STEP1.md](TRACKING_STEP1.md).
+
+### Authentication
+
+`AuthBloc` owns the session, `ApiClient` keeps it alive (attaching the token,
+refreshing on 401 and replaying the request), and `AuthService` decides
+whether a response is a session at all — a 200 without a usable token pair is
+refused rather than accepted into a half-signed-in state. Tokens live only in
+the keystore; `AppStore`'s copy can lag a rotation, so anything the server
+acts on reads through `AppStore.currentRefreshToken()`. Only a 401 or 403
+from the refresh endpoint ends a session: offline, timeouts, 5xx and 429 keep
+it. An involuntary expiry is navigated by `AuthSessionGate`, since no screen
+knows it happened. See [AUTH.md](AUTH.md).
+
+### Route processor
+
+`RouteProcessor.process` in [lib/utils/route_processor.dart](lib/utils/route_processor.dart)
+turns the recorder's raw fixes into distance, moving and recorded time, pace,
+per-kilometre splits, smoothed elevation and an encoded polyline. It is pure
+Dart — no I/O, no channels, no clock — so all 32 of its tests run without a
+device. It filters aggressively (accuracy, mock provider, impossible speed) and
+never bridges a pause or a signal gap with a straight line, so its distance,
+not the notification's, is the authority. See
+[TRACKING_STEP2.md](TRACKING_STEP2.md).
+
+### Route maps
+
+`ActivityRouteMap` renders an activity's encoded route over a dark MapLibre
+style with the volt line, start/end markers, optional split markers and
+automatic bounds. `ActivityRouteThumbnail` uses the backend's one-time PNG on
+history/share surfaces and falls back to a local route drawing when offline.
+The style is configurable with `MAP_STYLE_URL`; see
+[TRACKING_STEP4.md](TRACKING_STEP4.md) for provider, web and verification setup.
+
+### Device health sync
+
+The Tracking tab can connect read-only Health Connect or Apple Health data for
+steps, active calories, resting heart rate, SpO₂ and weight. It creates daily
+summaries on-device, uses per-record-type change tokens on Android, keeps iOS
+timestamp cursors, and schedules an optional connectivity-aware background
+refresh. BMI comes only from the member's profile measurements. Permission,
+provider-installation and phone/wearable empty states are built into the card;
+see [TRACKING_STEP5.md](TRACKING_STEP5.md) for platform setup, the VO₂ package
+limitation and the physical-device release checklist.
+
+### Tracking experience
+
+The Tracking tab now combines daily steps/active-energy rings, wearable-aware
+metric cards and recent activities with static route thumbnails. An active
+workout shows its live map, duration, distance and pace; Finish processes and
+idempotently saves the route before clearing its local session. Activity detail
+adds the interactive map, splits, elevation and heart-rate sections with honest
+aggregate or empty fallbacks when sampled chart data was not stored. See
+[TRACKING_STEP6.md](TRACKING_STEP6.md) for the complete UI and retry behavior.
+
 ---
 
 ## Adding a custom font

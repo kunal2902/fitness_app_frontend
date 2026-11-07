@@ -60,6 +60,10 @@
 	<string>Choose a photo from your library to use as your profile picture.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save photos you capture in the app to your library.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Read steps, active calories, weight and supported wearable metrics to build your daily fitness summary.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Fitness App uses read-only health access and does not add or change Apple Health records.</string>
 
 	<!-- ================= Background execution =================
 	     voip:  lets PushKit wake the app for an incoming call when it is
@@ -77,6 +81,10 @@
 		<string>audio</string>
 		<string>remote-notification</string>
 		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.fitnessapp.health.sync</string>
 	</array>
 
 	<!-- Release builds talk to HTTPS only. Debug builds reach a plain-HTTP

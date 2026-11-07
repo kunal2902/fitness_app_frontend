@@ -75,6 +75,14 @@ class AppConfig {
   /// this is the bare origin.
   static String get socketUrl => mediaBaseUrl;
 
+  /// MapLibre style document. The default is OpenFreeMap's no-key dark style;
+  /// production can point this at a self-hosted or contracted provider without
+  /// changing the route renderer.
+  static const String mapStyleUrl = String.fromEnvironment(
+    'MAP_STYLE_URL',
+    defaultValue: 'https://tiles.openfreemap.org/styles/dark',
+  );
+
   static const Duration connectTimeout = Duration(seconds: 20);
   static const Duration receiveTimeout = Duration(seconds: 30);
   static const Duration uploadTimeout = Duration(seconds: 60);

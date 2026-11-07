@@ -42,6 +42,13 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
 
   Timer? _debounce;
   bool _checkingAvailability = false;
+
+  /// Bumped on submit. An availability probe is a convenience that races
+  /// the real thing: one fired while the user was still typing can land
+  /// *after* signup has come back 409 and clear the field error that
+  /// explains the rejection, leaving the form looking fine and refusing to
+  /// submit. Results from an older epoch are therefore discarded.
+  int _availabilityEpoch = 0;
   String? _usernameServerError;
   String? _emailServerError;
   double _passwordStrength = 0;
@@ -66,6 +73,7 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
   }
 
   Future<void> _checkAvailability() async {
+    final int epoch = _availabilityEpoch;
     final String username = _username.text.trim();
     final String email = _email.text.trim();
 
@@ -80,7 +88,7 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
         username: usernameOk ? username : null,
         email: emailOk ? email : null,
       );
-      if (!mounted) return;
+      if (!mounted || epoch != _availabilityEpoch) return;
       setState(() {
         _usernameServerError = (usernameOk && !result.usernameAvailable)
             ? 'That username is taken'
@@ -102,6 +110,10 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
 
   void _submit() {
     FocusScope.of(context).unfocus();
+
+    // Stop a queued probe, and mark anything already in flight as stale.
+    _debounce?.cancel();
+    _availabilityEpoch++;
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_usernameServerError != null || _emailServerError != null) return;

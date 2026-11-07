@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/api_endpoints.dart';
 import '../config/app_config.dart';
@@ -51,6 +52,31 @@ class ApiClient {
   bool _isRefreshing = false;
   Completer<String?>? _refreshCompleter;
 
+  /// Incremented every time the session is deliberately ended.
+  ///
+  /// A refresh can already be in flight when the user taps Sign out. It
+  /// finishes a moment later, writes the rotated pair to secure storage —
+  /// and the next cold start finds tokens on disk and signs the user back
+  /// into the account they just left. Capturing the epoch before the
+  /// request and comparing it after is what makes the write conditional on
+  /// the session still being wanted.
+  int _sessionEpoch = 0;
+
+  /// Tell the client the session is over, so a refresh that lands after
+  /// this point is discarded instead of resurrecting it. Call it from
+  /// whatever decides a session has ended — logout, expiry.
+  void invalidateSession() => _sessionEpoch++;
+
+  /// Clears the cross-test state this singleton would otherwise carry
+  /// between test cases.
+  @visibleForTesting
+  void resetForTest() {
+    _isRefreshing = false;
+    _refreshCompleter = null;
+    _sessionEpoch = 0;
+    onSessionExpired = null;
+  }
+
   // -------------------------------------------------------------------------
   // Interceptors
   // -------------------------------------------------------------------------
@@ -60,7 +86,17 @@ class ApiClient {
     RequestInterceptorHandler handler,
   ) async {
     if (options.extra['skipAuth'] != true) {
-      final String? token = await StorageService.instance.readAccessToken();
+      String? token;
+      try {
+        token = await StorageService.instance.readAccessToken();
+      } catch (error) {
+        // A keystore that will not open is not a reason to fail the request
+        // before it leaves: send it unauthorised, let the server answer 401
+        // and let the normal expiry path deal with it. Throwing from an
+        // interceptor would surface as an opaque network error instead.
+        developer.log('could not read access token: $error', name: 'api');
+        token = null;
+      }
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
@@ -229,67 +265,75 @@ class ApiClient {
     // Collapse concurrent 401s into a single refresh call.
     if (_isRefreshing) return _refreshCompleter?.future;
 
+    final Completer<String?> completer = Completer<String?>();
     _isRefreshing = true;
-    _refreshCompleter = Completer<String?>();
+    _refreshCompleter = completer;
+    final int epoch = _sessionEpoch;
 
+    String? token;
     try {
-      final String? refreshToken =
-          await StorageService.instance.readRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) {
-        _refreshCompleter!.complete(null);
-        return null;
-      }
-
-      final Response<dynamic> res = await _dio.post<dynamic>(
-        ApiEndpoints.refresh,
-        data: <String, dynamic>{'refreshToken': refreshToken},
-        options: Options(extra: <String, dynamic>{'skipAuth': true}),
-      );
-
-      final Map<String, dynamic> body = _asMap(res.data);
-      final Map<String, dynamic> payload = body['data'] is Map<String, dynamic>
-          ? body['data'] as Map<String, dynamic>
-          : body;
-      final Map<String, dynamic> tokens =
-          payload['tokens'] is Map<String, dynamic>
-              ? payload['tokens'] as Map<String, dynamic>
-              : payload;
-
-      final String? access = tokens['accessToken'] as String?;
-      final String? newRefresh = tokens['refreshToken'] as String?;
-
-      final int status = res.statusCode ?? 0;
-
-      if (status >= 200 &&
-          status < 300 &&
-          access != null &&
-          access.isNotEmpty) {
-        await StorageService.instance.writeTokens(
-          accessToken: access,
-          refreshToken: (newRefresh != null && newRefresh.isNotEmpty)
-              ? newRefresh
-              : refreshToken,
-        );
-        _refreshCompleter!.complete(access);
-        return access;
-      }
-
-      // Only discard the tokens when the server actually rejected them.
-      // A 429 or a malformed body is not proof the session is dead.
-      if (status == 401 || status == 403) {
-        await StorageService.instance.clearTokens();
-      }
-      _refreshCompleter!.complete(null);
-      return null;
-    } on DioException {
-      // Offline, timeout or a 5xx — the refresh token is probably still
-      // good, so keep it and let the next attempt recover. Clearing here
-      // would log the user out over a dropped connection.
-      _refreshCompleter!.complete(null);
-      return null;
+      token = await _performRefresh(epoch);
+    } catch (error) {
+      // Offline, a timeout, a 5xx, or secure storage refusing to open: the
+      // refresh token is probably still good, so keep it and let the next
+      // attempt recover. Clearing here would sign the user out over a
+      // dropped connection.
+      //
+      // Catching everything, not just DioException, is deliberate. The
+      // completer below has waiters, and an exception escaping this frame
+      // used to leave it uncompleted — parking every concurrent 401 on a
+      // future that would never resolve.
+      developer.log('token refresh failed: $error', name: 'api');
+      token = null;
     } finally {
       _isRefreshing = false;
+      if (!completer.isCompleted) completer.complete(token);
     }
+    return token;
+  }
+
+  /// The refresh request itself. Returns the new access token, or null when
+  /// the session could not be renewed.
+  Future<String?> _performRefresh(int epoch) async {
+    final String? refreshToken =
+        await StorageService.instance.readRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    final Response<dynamic> res = await _dio.post<dynamic>(
+      ApiEndpoints.refresh,
+      data: <String, dynamic>{'refreshToken': refreshToken},
+      options: Options(extra: <String, dynamic>{'skipAuth': true}),
+    );
+
+    final Map<String, dynamic> body = _asMap(res.data);
+    final Map<String, dynamic> payload = _asMap(body['data']).isNotEmpty
+        ? _asMap(body['data'])
+        : body;
+    final Map<String, dynamic> tokens = _asMap(payload['tokens']).isNotEmpty
+        ? _asMap(payload['tokens'])
+        : payload;
+
+    final String access = (tokens['accessToken'] ?? '').toString();
+    final String newRefresh = (tokens['refreshToken'] ?? '').toString();
+    final int status = res.statusCode ?? 0;
+
+    if (status >= 200 && status < 300 && access.isNotEmpty) {
+      // Signed out while this was in flight: throw the new pair away rather
+      // than write it over the cleared slot.
+      if (epoch != _sessionEpoch) return null;
+      await StorageService.instance.writeTokens(
+        accessToken: access,
+        refreshToken: newRefresh.isNotEmpty ? newRefresh : refreshToken,
+      );
+      return access;
+    }
+
+    // Only discard the tokens when the server actually rejected them.
+    // A 429 or a malformed body is not proof the session is dead.
+    if ((status == 401 || status == 403) && epoch == _sessionEpoch) {
+      await StorageService.instance.clearTokens();
+    }
+    return null;
   }
 
   // -------------------------------------------------------------------------

@@ -34,9 +34,17 @@ class AppStore extends ChangeNotifier {
   AuthStatus get status => _status;
 
   String? _accessToken;
+
+  /// The access token as of the last read from disk.
+  ///
+  /// May lag: `ApiClient` rotates tokens straight into secure storage
+  /// without going through the store. Fine for the emptiness checks below,
+  /// but never send this to the server — see [currentRefreshToken].
   String? get accessToken => _accessToken;
 
   String? _refreshToken;
+
+  /// The cached refresh token, with the same caveat as [accessToken].
   String? get refreshToken => _refreshToken;
 
   UserModel? _user;
@@ -46,6 +54,33 @@ class AppStore extends ChangeNotifier {
       _status == AuthStatus.authenticated &&
       _accessToken != null &&
       _accessToken!.isNotEmpty;
+
+  /// A token exists on disk, whether or not we can also describe the user.
+  ///
+  /// Bootstrap needs to tell "signed out" apart from "signed in but we lost
+  /// the cached profile": the second still has a working token, and
+  /// treating it as the first leaves that token on disk, attached to every
+  /// request, while the UI behaves as though nobody is signed in.
+  bool get hasSessionToken => _accessToken != null && _accessToken!.isNotEmpty;
+
+  /// The live refresh token, read from storage rather than from the cache.
+  ///
+  /// Use this for anything the server will act on — revocation above all.
+  /// `ApiClient` rotates the pair directly into secure storage, so the
+  /// cached copy can be a generation behind, and asking the server to
+  /// revoke a superseded token leaves the real session alive.
+  Future<String?> currentRefreshToken() async {
+    try {
+      final String? stored = await _storage.readRefreshToken();
+      if (stored != null && stored.isNotEmpty) {
+        _refreshToken = stored;
+        return stored;
+      }
+    } catch (_) {
+      // Secure storage unavailable — fall back to the in-memory copy.
+    }
+    return _refreshToken;
+  }
 
   // -------------------------------------------------------------------------
   // Onboarding
@@ -82,7 +117,12 @@ class AppStore extends ChangeNotifier {
 
     final Map<String, dynamic>? userJson =
         _storage.getJson(StorageKeys.userJson);
-    _user = userJson != null ? UserModel.fromJson(userJson) : null;
+    final UserModel? cached =
+        userJson != null ? UserModel.fromJson(userJson) : null;
+    // An id-less record is a corrupt cache, not a user. Treating it as one
+    // would show a signed-in shell belonging to nobody; discarding it lets
+    // bootstrap re-fetch the profile from the token we still hold.
+    _user = (cached != null && cached.id.isNotEmpty) ? cached : null;
 
     final Map<String, dynamic>? draft =
         _storage.getJson(StorageKeys.onboardingDraft);
@@ -131,6 +171,17 @@ class AppStore extends ChangeNotifier {
   Future<void> updateUser(UserModel user) async {
     _user = user;
     await _storage.setJson(StorageKeys.userJson, user.toJson());
+    notifyListeners();
+  }
+
+  /// Completes a session that was recovered at launch: tokens were on disk
+  /// but the cached profile was missing or corrupt, and `/auth/me` has just
+  /// said who they belong to.
+  Future<void> adoptRecoveredUser(UserModel user) async {
+    _user = user;
+    _status = AuthStatus.authenticated;
+    await _storage.setJson(StorageKeys.userJson, user.toJson());
+    await _storage.setBool(StorageKeys.isLoggedIn, value: true);
     notifyListeners();
   }
 

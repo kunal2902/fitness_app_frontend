@@ -31,6 +31,11 @@
 
   <title>fitness_app</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- maplibre_gl 0.22 delegates to MapLibre GL JS on web. Keep these on the
+       same v4 line the plugin is built against. -->
+  <script src="https://unpkg.com/maplibre-gl@^4.3/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@^4.3/dist/maplibre-gl.css" rel="stylesheet"/>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

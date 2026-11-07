@@ -5,6 +5,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/main/main_shell_screen.dart';
 import '../screens/onboarding/onboarding_flow_screen.dart';
 import '../screens/splash/splash_screen.dart';
+import '../screens/tracking/activity_detail_screen.dart';
 import '../screens/welcome/welcome_screen.dart';
 import 'app_routes.dart';
 
@@ -31,6 +32,23 @@ class AppRouter {
         final Object? args = settings.arguments;
         return _page(
           MainShellScreen(initialIndex: args is int ? args : 0),
+          settings,
+        );
+      case AppRoutes.activityDetail:
+        final Object? args = settings.arguments;
+        if (args is ActivityDetailArguments) {
+          return _page(
+            ActivityDetailScreen(
+              initialActivity: args.activity,
+              repository: args.repository,
+            ),
+            settings,
+          );
+        }
+        return _page(
+          const Scaffold(
+            body: Center(child: Text('That activity is unavailable.')),
+          ),
           settings,
         );
       default:

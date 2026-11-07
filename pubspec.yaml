@@ -22,6 +22,10 @@ dependencies:
   # Networking
   dio: ^5.7.0
 
+  # Vendor-neutral vector maps. Keep this exact: 0.23's published Android
+  # package targets Java 21, while this app's Android toolchain uses JDK 17.
+  maplibre_gl: 0.22.0
+
   # Media
   image_picker: ^1.1.2
 
@@ -39,7 +43,17 @@ dependencies:
 
   # Local persistence (backs the BLoC layer)
   shared_preferences: ^2.3.2
-  flutter_secure_storage: ^9.2.2
+  # v10 migrates the v9 Android encrypted-preferences tokens and resolves the
+  # modern web interop required by MapLibre. Do not jump directly to v11.
+  flutter_secure_storage: ^10.3.2
+
+  # Read-only HealthKit / Health Connect access. Device records are reduced
+  # to daily summaries before they leave the phone.
+  health: 13.3.2
+
+  # Periodic, OS-managed health sync. WorkManager may defer jobs for battery
+  # and connectivity, so foreground refresh remains the immediate path.
+  workmanager: 0.10.10
 
 dev_dependencies:
   flutter_test:

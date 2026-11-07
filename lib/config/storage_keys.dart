@@ -18,6 +18,7 @@ class StorageKeys {
   static const String onboardingCompleted = 'onboarding.completed';
   static const String preferredHeightUnit = 'prefs.height_unit';
   static const String preferredWeightUnit = 'prefs.weight_unit';
+  static const String healthSyncState = 'health.sync_state';
 
   /// Everything cleared on logout.
   static const List<String> clearOnLogout = <String>[
@@ -25,5 +26,6 @@ class StorageKeys {
     refreshToken,
     userJson,
     isLoggedIn,
+    healthSyncState,
   ];
 }

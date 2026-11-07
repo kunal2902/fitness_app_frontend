@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'json_coercion.dart';
 import 'onboarding_data.dart';
 
 /// The authenticated user as returned by the backend.
@@ -64,19 +65,23 @@ class UserModel extends Equatable {
     );
   }
 
+  /// Coerced rather than cast throughout. This parses both `/auth/me` and
+  /// the copy cached in SharedPreferences, so one unexpected type — a
+  /// numeric username, a legacy cache written by an older build — would
+  /// otherwise throw a `TypeError` during bootstrap and brick the launch.
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final Object? profile = json['fitnessProfile'];
+    final Map<String, dynamic>? profile = asStringMap(json['fitnessProfile']);
+    final String avatar = asString(json['avatarUrl']);
     return UserModel(
-      id: (json['id'] ?? json['_id'] ?? '').toString(),
-      username: (json['username'] ?? '') as String,
-      fullName: (json['fullName'] ?? '') as String,
-      email: (json['email'] ?? '') as String,
-      avatarUrl: json['avatarUrl'] as String?,
-      isEmailVerified: json['isEmailVerified'] as bool? ?? false,
-      fitnessProfile: profile is Map<String, dynamic>
-          ? OnboardingData.fromJson(profile)
-          : null,
-      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
+      id: asString(json['id'] ?? json['_id']),
+      username: asString(json['username']),
+      fullName: asString(json['fullName']),
+      email: asString(json['email']),
+      avatarUrl: avatar.isEmpty ? null : avatar,
+      isEmailVerified: json['isEmailVerified'] == true,
+      fitnessProfile:
+          profile != null ? OnboardingData.fromJson(profile) : null,
+      createdAt: DateTime.tryParse(asString(json['createdAt'])),
     );
   }
 

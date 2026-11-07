@@ -15,10 +15,12 @@ import 'routes/app_router.dart';
 import 'routes/app_routes.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
+import 'services/health_background_scheduler.dart';
 import 'services/push_service.dart';
 import 'services/socket_service.dart';
 import 'store/app_store.dart';
 import 'theme/app_theme.dart';
+import 'widgets/auth_session_gate.dart';
 import 'widgets/call_overlay.dart';
 
 /// Root widget. Wires up the global store, the always-on BLoCs, the
@@ -33,6 +35,12 @@ class FitnessApp extends StatefulWidget {
 
 class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
   final AuthBloc _authBloc = AuthBloc();
+
+  /// The auth listener sits above [MaterialApp], so `Navigator.of(context)`
+  /// there would look above the navigator and find nothing. An involuntary
+  /// sign-out has to be able to navigate from outside the widget tree it is
+  /// kicking the user out of.
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   /// Created once and kept for the app's lifetime: a call can arrive at
   /// any moment, so the thing that listens for invites cannot be scoped to
@@ -156,6 +164,21 @@ class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
       // permission prompt arrives with context.
       await PushService.instance.registerForCalls();
     } else if (state.status == AuthFlowStatus.unauthenticated) {
+      // Navigating out of the shell on an expiry is `AuthSessionGate`'s job;
+      // this branch only tears down the connections the session owned.
+      try {
+        await HealthBackgroundScheduler.instance.disable();
+      } catch (error, stackTrace) {
+        // The local account state is already cleared, so a stale worker will
+        // refuse to sync. Do not let scheduler cleanup block the remaining
+        // sign-out cleanup.
+        developer.log(
+          'health background scheduler cleanup failed',
+          name: 'health',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       await PushService.instance.unregister();
       SocketService.instance.disconnect();
     }
@@ -174,36 +197,40 @@ class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
         child: BlocListener<AuthBloc, AuthState>(
           listenWhen: (AuthState a, AuthState b) => a.status != b.status,
           listener: _onAuthChanged,
-          // Only the theme mode needs to rebuild MaterialApp.
-          child: Consumer<AppStore>(
-            builder: (BuildContext context, AppStore store, Widget? child) {
-              return MaterialApp(
-                title: AppConfig.appName,
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.light,
-                darkTheme: AppTheme.dark,
-                themeMode: store.themeMode,
-                initialRoute: AppRoutes.splash,
-                onGenerateRoute: AppRouter.onGenerateRoute,
-                builder: (BuildContext context, Widget? child) {
-                  // Lock text scaling to a sane band so the onboarding and
-                  // call layouts never break on aggressive accessibility
-                  // settings.
-                  final MediaQueryData mq = MediaQuery.of(context);
-                  return MediaQuery(
-                    data: mq.copyWith(
-                      textScaler: mq.textScaler.clamp(
-                        minScaleFactor: 0.85,
-                        maxScaleFactor: 1.3,
+          child: AuthSessionGate(
+            navigatorKey: _navigatorKey,
+            // Only the theme mode needs to rebuild MaterialApp.
+            child: Consumer<AppStore>(
+              builder: (BuildContext context, AppStore store, Widget? child) {
+                return MaterialApp(
+                  title: AppConfig.appName,
+                  navigatorKey: _navigatorKey,
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.light,
+                  darkTheme: AppTheme.dark,
+                  themeMode: store.themeMode,
+                  initialRoute: AppRoutes.splash,
+                  onGenerateRoute: AppRouter.onGenerateRoute,
+                  builder: (BuildContext context, Widget? child) {
+                    // Lock text scaling to a sane band so the onboarding and
+                    // call layouts never break on aggressive accessibility
+                    // settings.
+                    final MediaQueryData mq = MediaQuery.of(context);
+                    return MediaQuery(
+                      data: mq.copyWith(
+                        textScaler: mq.textScaler.clamp(
+                          minScaleFactor: 0.85,
+                          maxScaleFactor: 1.3,
+                        ),
                       ),
-                    ),
-                    child: CallOverlay(
-                      child: child ?? const SizedBox.shrink(),
-                    ),
-                  );
-                },
-              );
-            },
+                      child: CallOverlay(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),

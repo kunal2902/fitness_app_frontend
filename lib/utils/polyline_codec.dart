@@ -17,6 +17,7 @@ class PolylineCodec {
   /// Five decimal places, the precision every consumer of this format assumes.
   static const int precision = 5;
   static const double _scale = 100000; // 10^precision
+  static const int _maxPoints = 50000;
 
   static String encode(Iterable<RouteCoordinate> coordinates) {
     final StringBuffer out = StringBuffer();
@@ -59,7 +60,26 @@ class PolylineCodec {
 
       latitude += latitudeDelta.value;
       longitude += longitudeDelta.value;
-      out.add(RouteCoordinate(latitude / _scale, longitude / _scale));
+      final RouteCoordinate coordinate =
+          RouteCoordinate(latitude / _scale, longitude / _scale);
+      if (coordinate.latitude < -90 ||
+          coordinate.latitude > 90 ||
+          coordinate.longitude < -180 ||
+          coordinate.longitude > 180) {
+        throw FormatException(
+          'Encoded polyline contains an out-of-range coordinate.',
+          encoded,
+          start,
+        );
+      }
+      out.add(coordinate);
+      if (out.length > _maxPoints) {
+        throw FormatException(
+          'Encoded polyline contains too many points.',
+          encoded,
+          start,
+        );
+      }
     }
     return out;
   }
@@ -94,7 +114,7 @@ class PolylineCodec {
       }
       byte = encoded.codeUnitAt(index) - 63;
       index += 1;
-      if (byte < 0 || shift > 30) {
+      if (byte < 0 || byte > 63 || shift > 30) {
         throw FormatException(
           'Encoded polyline contains an invalid character.',
           encoded,

@@ -3,20 +3,43 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/tracking/activity_feed_cubit.dart';
+import '../../blocs/tracking/health_sync_cubit.dart';
 import '../../blocs/tracking/tracking_recorder_cubit.dart';
+import '../../models/health_models.dart';
+import '../../models/route_models.dart';
+import '../../models/tracked_activity.dart';
 import '../../models/tracking_models.dart';
+import '../../routes/app_routes.dart';
+import '../../services/health_background_scheduler.dart';
+import '../../services/health_sync_repository.dart';
+import '../../services/tracking_activity_repository.dart';
 import '../../services/tracking_recorder.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/tracking_format.dart';
+import '../../widgets/activity_route_map.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/glow_background.dart';
+import '../../widgets/health_connect_card.dart';
+import '../../widgets/recent_activities.dart';
 import '../../widgets/section_card.dart';
+import 'activity_detail_screen.dart';
 
 class TrackingScreen extends StatefulWidget {
-  const TrackingScreen({this.recorder, super.key});
+  const TrackingScreen({
+    this.recorder,
+    this.healthRepository,
+    this.healthScheduler,
+    this.activityRepository,
+    super.key,
+  });
 
   /// Injectable for device-independent tests. The production tab uses the
   /// Android platform recorder.
   final TrackingRecorder? recorder;
+  final HealthSyncRepository? healthRepository;
+  final HealthSyncScheduler? healthScheduler;
+  final TrackingActivityRepository? activityRepository;
 
   @override
   State<TrackingScreen> createState() => _TrackingScreenState();
@@ -24,8 +47,18 @@ class TrackingScreen extends StatefulWidget {
 
 class _TrackingScreenState extends State<TrackingScreen>
     with WidgetsBindingObserver {
+  late final TrackingActivityRepository _activityRepository =
+      widget.activityRepository ?? ApiTrackingActivityRepository();
+  late final ActivityFeedCubit _activityCubit =
+      ActivityFeedCubit(repository: _activityRepository);
   late final TrackingRecorderCubit _cubit = TrackingRecorderCubit(
     recorder: widget.recorder ?? PlatformTrackingRecorder(),
+    activityRepository: _activityRepository,
+    onActivitySaved: () => unawaited(_activityCubit.refresh()),
+  );
+  late final HealthSyncCubit _healthCubit = HealthSyncCubit(
+    repository: widget.healthRepository,
+    scheduler: widget.healthScheduler,
   );
 
   @override
@@ -33,6 +66,8 @@ class _TrackingScreenState extends State<TrackingScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_cubit.initialize());
+    unawaited(_healthCubit.initialize());
+    unawaited(_activityCubit.initialize());
   }
 
   @override
@@ -40,6 +75,10 @@ class _TrackingScreenState extends State<TrackingScreen>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       unawaited(_cubit.refresh());
+      if (_healthCubit.state.availability !=
+          HealthProviderAvailability.checking) {
+        unawaited(_healthCubit.initialize());
+      }
     }
   }
 
@@ -47,10 +86,20 @@ class _TrackingScreenState extends State<TrackingScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_cubit.close());
+    unawaited(_healthCubit.close());
+    unawaited(_activityCubit.close());
     super.dispose();
   }
 
   void _feedback(BuildContext context, TrackingRecorderState state) {
+    if (state.error != null) {
+      AppSnackbar.error(context, state.error!);
+    } else if (state.notice != null) {
+      AppSnackbar.success(context, state.notice!);
+    }
+  }
+
+  void _healthFeedback(BuildContext context, HealthSyncState state) {
     if (state.error != null) {
       AppSnackbar.error(context, state.error!);
     } else if (state.notice != null) {
@@ -105,15 +154,39 @@ class _TrackingScreenState extends State<TrackingScreen>
     if (confirmed == true) unawaited(_cubit.discard());
   }
 
+  Future<void> _openActivity(TrackedActivity activity) async {
+    final Object? deleted = await Navigator.of(context).pushNamed(
+      AppRoutes.activityDetail,
+      arguments: ActivityDetailArguments(
+        activity: activity,
+        repository: _activityRepository,
+      ),
+    );
+    if (deleted == true) unawaited(_activityCubit.refresh(showLoading: true));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<TrackingRecorderCubit>.value(
-      value: _cubit,
-      child: BlocListener<TrackingRecorderCubit, TrackingRecorderState>(
-        listenWhen:
-            (TrackingRecorderState before, TrackingRecorderState after) =>
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<TrackingRecorderCubit>.value(value: _cubit),
+        BlocProvider<HealthSyncCubit>.value(value: _healthCubit),
+        BlocProvider<ActivityFeedCubit>.value(value: _activityCubit),
+      ],
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<TrackingRecorderCubit, TrackingRecorderState>(
+            listenWhen:
+                (TrackingRecorderState before, TrackingRecorderState after) =>
+                    before.revision != after.revision,
+            listener: _feedback,
+          ),
+          BlocListener<HealthSyncCubit, HealthSyncState>(
+            listenWhen: (HealthSyncState before, HealthSyncState after) =>
                 before.revision != after.revision,
-        listener: _feedback,
+            listener: _healthFeedback,
+          ),
+        ],
         child: Scaffold(
           backgroundColor: context.palette.bg,
           body: GlowBackground(
@@ -121,50 +194,85 @@ class _TrackingScreenState extends State<TrackingScreen>
             child: SafeArea(
               child: BlocBuilder<TrackingRecorderCubit, TrackingRecorderState>(
                 builder: (BuildContext context, TrackingRecorderState state) {
-                  return RefreshIndicator(
-                    onRefresh: () => _cubit.refresh(showBusy: true),
-                    color: context.palette.accent,
-                    backgroundColor: context.palette.surfaceHigh,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.huge,
-                      ),
-                      children: <Widget>[
-                        Text('Tracking', style: context.text.headlineMedium),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          'Record an outdoor workout directly with your phone.',
-                          style: context.text.bodyMedium?.copyWith(
-                            color: context.palette.textSecondary,
+                  return BlocBuilder<HealthSyncCubit, HealthSyncState>(
+                    builder: (BuildContext context, HealthSyncState health) {
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          await Future.wait<void>(<Future<void>>[
+                            _cubit.refresh(showBusy: true),
+                            _healthCubit.refresh(),
+                            _activityCubit.refresh(),
+                          ]);
+                        },
+                        color: context.palette.accent,
+                        backgroundColor: context.palette.surfaceHigh,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.huge,
                           ),
+                          children: <Widget>[
+                            Text(
+                              'Tracking',
+                              style: context.text.headlineMedium,
+                            ),
+                            const SizedBox(height: AppSpacing.xxs),
+                            Text(
+                              'Record workouts and keep daily health in one place.',
+                              style: context.text.bodyMedium?.copyWith(
+                                color: context.palette.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            if (!state.initialized)
+                              const _LoadingCard()
+                            else if (state.session.isActive)
+                              _LiveRecorderCard(
+                                state: state,
+                                onPause: _cubit.pause,
+                                onResume: _cubit.resume,
+                                onStop: _confirmStop,
+                                onDiscard: _confirmDiscard,
+                              )
+                            else
+                              _RecorderReadyCard(
+                                state: state,
+                                onStart: _cubit.start,
+                                onRequestPermissions: _cubit.requestPermissions,
+                                onOpenAppSettings: _cubit.openAppSettings,
+                                onOpenLocationSettings:
+                                    _cubit.openLocationSettings,
+                              ),
+                            const SizedBox(height: AppSpacing.md),
+                            HealthConnectCard(
+                              state: health,
+                              onConnect: _healthCubit.connect,
+                              onInstall: _healthCubit.installProvider,
+                              onOpenSettings: _healthCubit.openSettings,
+                              onRefresh: _healthCubit.refresh,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            BlocBuilder<ActivityFeedCubit, ActivityFeedState>(
+                              builder: (
+                                BuildContext context,
+                                ActivityFeedState activities,
+                              ) {
+                                return RecentActivities(
+                                  state: activities,
+                                  onRetry: _activityCubit.refresh,
+                                  onOpen: _openActivity,
+                                );
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            const _PrivacyCard(),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.xl),
-                        if (!state.initialized)
-                          const _LoadingCard()
-                        else if (state.session.isActive)
-                          _LiveRecorderCard(
-                            state: state,
-                            onPause: _cubit.pause,
-                            onResume: _cubit.resume,
-                            onStop: _confirmStop,
-                            onDiscard: _confirmDiscard,
-                          )
-                        else
-                          _RecorderReadyCard(
-                            state: state,
-                            onStart: _cubit.start,
-                            onRequestPermissions: _cubit.requestPermissions,
-                            onOpenAppSettings: _cubit.openAppSettings,
-                            onOpenLocationSettings: _cubit.openLocationSettings,
-                          ),
-                        const SizedBox(height: AppSpacing.md),
-                        const _PrivacyCard(),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -454,6 +562,8 @@ class _LiveRecorderCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            _LiveRoutePreview(route: state.liveRoute),
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: <Widget>[
@@ -471,9 +581,12 @@ class _LiveRecorderCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _LiveMetric(
-                    label: 'GPS points',
-                    value: '${session.pointCount}',
-                    unit: 'saved',
+                    label: 'Average pace',
+                    value: formatTrackingPace(
+                      state.liveRoute?.avgPaceSecPerKm ??
+                          _provisionalPace(session),
+                    ),
+                    unit: '${session.pointCount} GPS points',
                   ),
                 ),
               ],
@@ -514,6 +627,57 @@ class _LiveRecorderCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  double? _provisionalPace(TrackingSessionSnapshot session) {
+    if (session.distanceM < 1 || session.elapsed.inMilliseconds <= 0) {
+      return null;
+    }
+    return session.elapsed.inMilliseconds / 1000 / (session.distanceM / 1000);
+  }
+}
+
+class _LiveRoutePreview extends StatelessWidget {
+  const _LiveRoutePreview({required this.route});
+
+  final ProcessedRoute? route;
+
+  @override
+  Widget build(BuildContext context) {
+    if (route == null || route!.encodedPolyline.isEmpty) {
+      return Container(
+        height: 220,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: context.palette.surfaceHigh,
+          borderRadius: AppRadius.rMd,
+          border: Border.all(color: context.palette.border),
+        ),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.gps_fixed_rounded, color: context.palette.accent),
+            const SizedBox(height: AppSpacing.xs),
+            Text('Waiting for route points', style: context.text.titleSmall),
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              'The map appears as reliable GPS points arrive.',
+              style: context.text.bodySmall?.copyWith(
+                color: context.palette.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return ActivityRouteMap(
+      encodedPolyline: route!.encodedPolyline,
+      splits: route!.splits,
+      height: 220,
+      interactive: false,
+      showSplitMarkers: false,
     );
   }
 }
@@ -560,7 +724,7 @@ class _PrivacyCard extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'Step 1 stores unfinished and completed routes only in local SQLite. Cloud upload and sharing are not enabled yet.',
+              'Unfinished routes and individual sensor readings stay on this device. Health sync sends only one daily summary per date.',
               style: context.text.bodySmall?.copyWith(
                 color: context.palette.textSecondary,
                 height: 1.4,

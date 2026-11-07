@@ -23,6 +23,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _password = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // An expiry routes here from outside the widget tree, so the state that
+    // explains why was emitted before this screen existed and the listener
+    // below will never see it. Read it once on arrival instead, or the user
+    // is bounced to a sign-in form with no explanation.
+    final AuthState state = context.read<AuthBloc>().state;
+    if (!state.sessionExpired || state.errorMessage == null) return;
+    final String message = state.errorMessage!;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppSnackbar.error(context, message);
+    });
+  }
+
+  @override
   void dispose() {
     _identifier.dispose();
     _password.dispose();
@@ -70,7 +85,11 @@ class _LoginScreenState extends State<LoginScreen> {
               child: CircleIconButton(
                 icon: Icons.arrow_back_rounded,
                 tooltip: 'Back',
-                onPressed: busy ? null : () => Navigator.of(context).pop(),
+                // Nothing behind it means nothing to go back to: popping the
+                // last route would leave a blank screen.
+                onPressed: busy || !Navigator.of(context).canPop()
+                    ? null
+                    : () => Navigator.of(context).pop(),
               ),
             ),
             leadingWidth: 60,

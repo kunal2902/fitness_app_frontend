@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:fitness_app/models/api_exception.dart';
+import 'package:fitness_app/models/route_models.dart';
+import 'package:fitness_app/models/tracked_activity.dart';
 import 'package:fitness_app/models/tracking_models.dart';
 import 'package:fitness_app/screens/tracking/tracking_screen.dart';
+import 'package:fitness_app/services/tracking_activity_repository.dart';
 import 'package:fitness_app/services/tracking_recorder.dart';
 import 'package:fitness_app/theme/app_theme.dart';
 import 'package:flutter/foundation.dart';
@@ -24,6 +28,7 @@ class FakeTrackingRecorder implements TrackingRecorder {
   TrackingSessionSnapshot session = const TrackingSessionSnapshot.idle();
   int permissionRequests = 0;
   final List<String> controls = <String>[];
+  Object? pointsFailure;
 
   @override
   Future<TrackingPermissionSnapshot> permissionStatus() async => permission;
@@ -102,8 +107,51 @@ class FakeTrackingRecorder implements TrackingRecorder {
       controls.add('location-settings');
 
   @override
-  Future<List<TrackingPoint>> points(String sessionId) async =>
-      const <TrackingPoint>[];
+  Future<List<TrackingPoint>> points(String sessionId) async {
+    if (pointsFailure != null) throw pointsFailure!;
+    return const <TrackingPoint>[];
+  }
+}
+
+class FakeTrackingActivityRepository implements TrackingActivityRepository {
+  final List<String> savedClientIds = <String>[];
+  Object? saveFailure;
+
+  TrackedActivity activity(String id) => TrackedActivity(
+        id: id,
+        type: TrackedActivityType.run,
+        startedAt: DateTime(2026, 9, 7, 6),
+        endedAt: DateTime(2026, 9, 7, 6, 2),
+        durationSec: 120,
+        movingSec: 118,
+        distanceM: 1250,
+        encodedPolyline: '',
+        splits: const <TrackedActivitySplit>[],
+        calories: 0,
+        source: TrackedActivitySource.app,
+      );
+
+  @override
+  Future<void> delete(String id) async {}
+
+  @override
+  Future<TrackedActivity> get(String id) async => activity(id);
+
+  @override
+  Future<List<TrackedActivity>> listRecent({int limit = 10}) async =>
+      const <TrackedActivity>[];
+
+  @override
+  Future<TrackedActivity> saveProcessed({
+    required ProcessedRoute route,
+    required String clientId,
+    TrackedActivityType type = TrackedActivityType.run,
+    double calories = 0,
+  }) async {
+    savedClientIds.add(clientId);
+    if (saveFailure != null) throw saveFailure!;
+    return activity('saved-1');
+  }
 }
 
 /// A recorder whose control commands can be held open, so the live poll runs
@@ -122,14 +170,18 @@ class GatedTrackingRecorder extends FakeTrackingRecorder {
 void main() {
   Future<void> openTracking(
     WidgetTester tester,
-    FakeTrackingRecorder recorder,
-  ) async {
+    FakeTrackingRecorder recorder, [
+    FakeTrackingActivityRepository? activities,
+  ]) async {
     await tester.binding.setSurfaceSize(const Size(600, 1100));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: TrackingScreen(recorder: recorder),
+        home: TrackingScreen(
+          recorder: recorder,
+          activityRepository: activities ?? FakeTrackingActivityRepository(),
+        ),
       ),
     );
     await tester.pump();
@@ -300,7 +352,7 @@ void main() {
     expect(find.text('RECORDING'), findsOneWidget);
     expect(find.text('02:03'), findsOneWidget);
     expect(find.text('1.25'), findsOneWidget);
-    expect(find.text('123'), findsOneWidget);
+    expect(find.textContaining('123 GPS points'), findsOneWidget);
 
     await tester.tap(find.text('Pause'));
     await tester.pump(const Duration(milliseconds: 150));
@@ -312,7 +364,7 @@ void main() {
     await tester.pump();
     expect(find.text('RECORDING'), findsOneWidget);
 
-    await tester.tap(find.text('Finish'));
+    await tester.tap(find.text('Finish').first);
     await tester.pumpAndSettle();
     expect(find.text('Finish workout?'), findsOneWidget);
     await tester.tap(find.text('Finish').last);
@@ -321,10 +373,10 @@ void main() {
 
     expect(
       recorder.controls,
-      <String>['start', 'pause', 'resume', 'stop'],
+      <String>['start', 'pause', 'resume', 'pause', 'stop'],
     );
     expect(find.text('Start outdoor workout'), findsOneWidget);
-    expect(find.text('Workout saved on this device'), findsOneWidget);
+    expect(find.text('Workout saved to your activities'), findsOneWidget);
   });
 
   testWidgets('discard requires confirmation and removes the active session',
@@ -394,4 +446,76 @@ void main() {
     expect(recorder.controls, <String>['pause']);
   });
 
+  testWidgets('a live-map read failure does not disable workout controls',
+      (WidgetTester tester) async {
+    final FakeTrackingRecorder recorder = FakeTrackingRecorder()
+      ..permission = const TrackingPermissionSnapshot(
+        supported: true,
+        locationServicesEnabled: true,
+        location: TrackingLocationPermission.precise,
+        notifications: TrackingNotificationPermission.granted,
+      )
+      ..session = TrackingSessionSnapshot(
+        status: TrackingSessionStatus.recording,
+        sessionId: 'session-1',
+        startedAt: DateTime(2026, 9, 17, 6),
+        pointCount: 5,
+      )
+      ..pointsFailure = StateError('point database temporarily busy');
+    await openTracking(tester, recorder);
+
+    expect(find.text('RECORDING'), findsOneWidget);
+    final OutlinedButton pause = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Pause'),
+    );
+    expect(pause.onPressed, isNotNull);
+    expect(find.text('Waiting for route points'), findsOneWidget);
+  });
+
+  testWidgets('failed upload keeps the paused route and Finish safely retries',
+      (WidgetTester tester) async {
+    final FakeTrackingRecorder recorder = FakeTrackingRecorder()
+      ..permission = const TrackingPermissionSnapshot(
+        supported: true,
+        locationServicesEnabled: true,
+        location: TrackingLocationPermission.precise,
+        notifications: TrackingNotificationPermission.granted,
+      )
+      ..session = TrackingSessionSnapshot(
+        status: TrackingSessionStatus.recording,
+        sessionId: 'retry-session',
+        startedAt: DateTime(2026, 9, 17, 6),
+        elapsed: const Duration(minutes: 10),
+        distanceM: 2000,
+        pointCount: 100,
+      );
+    final FakeTrackingActivityRepository activities =
+        FakeTrackingActivityRepository()
+          ..saveFailure = const ApiException.network();
+    await openTracking(tester, recorder, activities);
+
+    await tester.tap(find.text('Finish'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(recorder.session.isPaused, isTrue);
+    expect(recorder.controls, <String>['pause']);
+    expect(activities.savedClientIds, <String>['retry-session']);
+
+    activities.saveFailure = null;
+    await tester.tap(find.text('Finish').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish').last);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(recorder.session.isActive, isFalse);
+    expect(recorder.controls, <String>['pause', 'stop']);
+    expect(
+      activities.savedClientIds,
+      <String>['retry-session', 'retry-session'],
+    );
+  });
 }

@@ -22,7 +22,9 @@ class StorageService {
   bool _ready = false;
 
   static const FlutterSecureStorage _secure = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    // v10 migrates legacy EncryptedSharedPreferences tokens to its maintained
+    // cipher automatically on first access.
+    aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 

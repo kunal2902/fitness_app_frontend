@@ -30,13 +30,10 @@ android {
     defaultConfig {
         applicationId = "com.fitnessapp.fitness_app"
 
-        // Pinned rather than inherited from `flutter.minSdkVersion`.
-        // flutter_webrtc declares minSdk 23 and firebase_messaging 21; if
-        // the app's floor is lower than any library's, the manifest merger
-        // fails with a message that reads like a plugin bug rather than a
-        // config one. 24 clears every dependency here and covers ~99% of
-        // active Android devices.
-        minSdk = 24
+        // Health Connect is supported from Android 9 and health 13.x itself
+        // requires API 26. API 28 keeps the declared app floor aligned with
+        // the tracking module's actual availability contract.
+        minSdk = 28
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
