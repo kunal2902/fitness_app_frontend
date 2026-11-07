@@ -61,11 +61,17 @@ class ApiEndpoints {
   static const String healthSync = '/health/sync';
   static const String healthDaily = '/health/daily';
 
+  // Training discovery and member equipment
+  static const String trainingTaxonomy = '/training/taxonomy';
+  static const String exercises = '/exercises';
+  static String exercise(String id) => '$exercises/${Uri.encodeComponent(id)}';
+  static const String trainingPreferences = '/me/training-preferences';
+  static const String workouts = '/workouts';
+
   // Reserved for later phases — listed so the surface area is visible.
   // NOTE: none of these are mounted on the backend yet; calling one now
   // returns 404.
   static const String fitnessProfile = '/users/me/fitness-profile';
-  static const String workouts = '/workouts';
   static const String enrolments = '/users/me/enrolments';
   static const String community = '/community/posts';
   static const String subscriptions = '/subscriptions';

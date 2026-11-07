@@ -28,6 +28,7 @@ dependencies:
 
   # Media
   image_picker: ^1.1.2
+  video_player: 2.9.2
 
   # Realtime — chat and WebRTC signalling share one socket
   socket_io_client: ^3.1.6

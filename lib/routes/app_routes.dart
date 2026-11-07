@@ -8,5 +8,22 @@ class AppRoutes {
   static const String accountDetails = '/signup/account-details';
   static const String login = '/login';
   static const String home = '/home';
+  static const String exerciseLibrary = '/training/exercises';
+  static const String exerciseDetail = '/training/exercise';
+  static const String trainingEquipment = '/training/equipment';
   static const String activityDetail = '/tracking/activity';
+}
+
+class ExerciseLibraryArguments {
+  const ExerciseLibraryArguments({
+    this.initialMuscleId,
+    this.initialMuscleGroup,
+    this.initialEquipmentId,
+    this.initialAvailableEquipment = false,
+  });
+
+  final String? initialMuscleId;
+  final String? initialMuscleGroup;
+  final String? initialEquipmentId;
+  final bool initialAvailableEquipment;
 }

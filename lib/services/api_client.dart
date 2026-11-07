@@ -101,6 +101,16 @@ class ApiClient {
         options.headers['Authorization'] = 'Bearer $token';
       }
     }
+    final Object? sessionGuard = options.extra['isSessionCurrent'];
+    if (sessionGuard is bool Function() && !sessionGuard()) {
+      handler.reject(
+        DioException.requestCancelled(
+          requestOptions: options,
+          reason: 'Session changed before the request was sent',
+        ),
+      );
+      return;
+    }
     if (AppConfig.enableNetworkLogs) {
       developer.log(
         '→ ${options.method} ${options.path}',
@@ -139,15 +149,22 @@ class ApiClient {
     Map<String, dynamic>? query,
     bool skipAuth = false,
     CancelToken? cancelToken,
+    bool Function()? isSessionCurrent,
   }) {
     return _send(
       () => _dio.get<dynamic>(
         path,
         queryParameters: query,
         cancelToken: cancelToken,
-        options: Options(extra: <String, dynamic>{'skipAuth': skipAuth}),
+        options: Options(
+          extra: <String, dynamic>{
+            'skipAuth': skipAuth,
+            if (isSessionCurrent != null) 'isSessionCurrent': isSessionCurrent,
+          },
+        ),
       ),
       skipAuth: skipAuth,
+      isSessionCurrent: isSessionCurrent,
     );
   }
 
@@ -175,15 +192,22 @@ class ApiClient {
     Object? body,
     bool skipAuth = false,
     CancelToken? cancelToken,
+    bool Function()? isSessionCurrent,
   }) {
     return _send(
       () => _dio.patch<dynamic>(
         path,
         data: body,
         cancelToken: cancelToken,
-        options: Options(extra: <String, dynamic>{'skipAuth': skipAuth}),
+        options: Options(
+          extra: <String, dynamic>{
+            'skipAuth': skipAuth,
+            if (isSessionCurrent != null) 'isSessionCurrent': isSessionCurrent,
+          },
+        ),
       ),
       skipAuth: skipAuth,
+      isSessionCurrent: isSessionCurrent,
     );
   }
 
@@ -230,9 +254,12 @@ class ApiClient {
     Future<Response<dynamic>> Function() request, {
     bool allowRetry = true,
     bool skipAuth = false,
+    bool Function()? isSessionCurrent,
   }) async {
     try {
+      _requireCurrentSession(isSessionCurrent);
       final Response<dynamic> response = await request();
+      _requireCurrentSession(isSessionCurrent);
       final int status = response.statusCode ?? 0;
 
       // Only a call that *carried* a token can have had it expire. A 401
@@ -241,8 +268,13 @@ class ApiClient {
       // account the stored token belongs to.
       if (status == 401 && allowRetry && !skipAuth) {
         final String? refreshed = await _refreshAccessToken();
+        _requireCurrentSession(isSessionCurrent);
         if (refreshed != null) {
-          return _send(request, allowRetry: false);
+          return _send(
+            request,
+            allowRetry: false,
+            isSessionCurrent: isSessionCurrent,
+          );
         }
         onSessionExpired?.call();
       }
@@ -258,6 +290,12 @@ class ApiClient {
       throw _fromResponse(status, body);
     } on DioException catch (e) {
       throw _fromDio(e);
+    }
+  }
+
+  static void _requireCurrentSession(bool Function()? isSessionCurrent) {
+    if (isSessionCurrent != null && !isSessionCurrent()) {
+      throw const ApiException(message: 'Session changed.', code: 'CANCELLED');
     }
   }
 
@@ -297,7 +335,11 @@ class ApiClient {
   Future<String?> _performRefresh(int epoch) async {
     final String? refreshToken =
         await StorageService.instance.readRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return null;
+    if (epoch != _sessionEpoch ||
+        refreshToken == null ||
+        refreshToken.isEmpty) {
+      return null;
+    }
 
     final Response<dynamic> res = await _dio.post<dynamic>(
       ApiEndpoints.refresh,
