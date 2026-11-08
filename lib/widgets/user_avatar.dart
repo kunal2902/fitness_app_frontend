@@ -8,7 +8,7 @@ import '../theme/app_theme.dart';
 ///
 /// Three states, in order of preference:
 ///  1. the uploaded avatar from the server,
-///  2. a gradient monogram built from their name,
+///  2. a monogram built from their name,
 ///  3. a person glyph if there is no name at all.
 ///
 /// The fallback is not an error state — most users never upload a picture,
@@ -48,30 +48,33 @@ class UserAvatar extends StatelessWidget {
                     // uploaded resolution — a 1024px file scaled into a
                     // 72px circle otherwise wastes memory on every frame.
                     cacheWidth: (size * 3).round(),
-                    loadingBuilder: (
-                      BuildContext context,
-                      Widget child,
-                      ImageChunkEvent? progress,
-                    ) {
-                      if (progress == null) return child;
-                      return Container(
-                        color: palette.surfaceAlt,
-                        alignment: Alignment.center,
-                        child: SizedBox(
-                          height: size * 0.3,
-                          width: size * 0.3,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(palette.accent),
-                          ),
-                        ),
-                      );
-                    },
+                    loadingBuilder:
+                        (
+                          BuildContext context,
+                          Widget child,
+                          ImageChunkEvent? progress,
+                        ) {
+                          if (progress == null) return child;
+                          return Container(
+                            color: palette.surfaceAlt,
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              height: size * 0.3,
+                              width: size * 0.3,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  palette.accent,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                     // A dead URL must not leave a broken-image glyph on the
                     // profile header — fall back to the monogram.
-                    errorBuilder: (BuildContext context, Object _, StackTrace? __) =>
-                        _Monogram(user: user, size: size),
+                    errorBuilder:
+                        (BuildContext context, Object _, StackTrace? __) =>
+                            _Monogram(user: user, size: size),
                   ),
           ),
           if (showBusy)
@@ -82,9 +85,11 @@ class UserAvatar extends StatelessWidget {
                 child: SizedBox(
                   height: size * 0.32,
                   width: size * 0.32,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2.4,
-                    valueColor: AlwaysStoppedAnimation<Color>(palette.accent),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -107,13 +112,13 @@ class _Monogram extends StatelessWidget {
     final String initials = user?.initials ?? '';
 
     return Container(
-      decoration: const BoxDecoration(gradient: AppColors.voltGradient),
+      color: palette.surfaceHigh,
       alignment: Alignment.center,
       child: initials.isEmpty || initials == '?'
           ? Icon(
               Icons.person_rounded,
               size: size * 0.5,
-              color: palette.onAccent,
+              color: palette.textPrimary,
             )
           : Text(
               initials,
@@ -121,7 +126,7 @@ class _Monogram extends StatelessWidget {
                 fontSize: size * 0.36,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
-                color: AppColors.onVolt,
+                color: palette.textPrimary,
               ),
             ),
     );

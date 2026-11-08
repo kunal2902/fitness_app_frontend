@@ -15,8 +15,8 @@ import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/app_text_field.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/primary_button.dart';
+import 'auth_form_layout.dart';
 
 /// Final step of signup — the account itself.
 ///
@@ -189,167 +189,137 @@ class _AccountDetailsScreenState extends State<AccountDetailsScreen> {
             ),
             leadingWidth: 60,
           ),
-          body: GlowBackground(
-            alignment: const Alignment(0, -0.9),
-            child: SafeArea(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.xs,
-                    AppSpacing.lg,
-                    AppSpacing.xxl,
+          body: AuthFormLayout(
+            formKey: _formKey,
+            eyebrow: 'ALMOST THERE',
+            title: 'Create your account',
+            description: 'Your answers are saved. This is the last step.',
+            children: <Widget>[
+              AppTextField(
+                label: 'Username',
+                controller: _username,
+                hint: 'e.g. iron_kunal',
+                prefixIcon: Icons.alternate_email_rounded,
+                enabled: !busy,
+                autofillHints: const <String>[AutofillHints.newUsername],
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                  LengthLimitingTextInputFormatter(
+                    AppConfig.usernameMaxLength,
                   ),
+                ],
+                validator: Validators.username,
+                errorText: _usernameServerError,
+                statusWidget: _checkingAvailability
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+                onChanged: (_) {
+                  if (_usernameServerError != null) {
+                    setState(() => _usernameServerError = null);
+                  }
+                  _scheduleAvailabilityCheck();
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
+                label: 'Full name',
+                controller: _fullName,
+                hint: 'Your name as you want it shown',
+                prefixIcon: Icons.person_outline_rounded,
+                enabled: !busy,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
+                autofillHints: const <String>[AutofillHints.name],
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(
+                    AppConfig.fullNameMaxLength,
+                  ),
+                ],
+                validator: Validators.fullName,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
+                label: 'Email',
+                controller: _email,
+                hint: 'you@example.com',
+                prefixIcon: Icons.mail_outline_rounded,
+                enabled: !busy,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const <String>[AutofillHints.email],
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                ],
+                validator: Validators.email,
+                errorText: _emailServerError,
+                onChanged: (_) {
+                  if (_emailServerError != null) {
+                    setState(() => _emailServerError = null);
+                  }
+                  _scheduleAvailabilityCheck();
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
+                label: 'Password',
+                controller: _password,
+                hint: 'At least ${AppConfig.passwordMinLength} characters',
+                prefixIcon: Icons.lock_outline_rounded,
+                obscure: true,
+                enabled: !busy,
+                textInputAction: TextInputAction.done,
+                autofillHints: const <String>[AutofillHints.newPassword],
+                inputFormatters: <TextInputFormatter>[
+                  LengthLimitingTextInputFormatter(
+                    AppConfig.passwordMaxLength,
+                  ),
+                ],
+                validator: Validators.password,
+                onChanged: (String value) => setState(
+                  () => _passwordStrength = Validators.passwordStrength(value),
+                ),
+                onSubmitted: (_) => _submit(),
+              ),
+              PasswordStrengthBar(
+                strength: _passwordStrength,
+                label: Validators.strengthLabel(_passwordStrength),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              PrimaryButton(
+                label: 'Create account',
+                isLoading: busy,
+                onPressed: busy ? null : _submit,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Center(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
                     Text(
-                      'ALMOST THERE',
-                      style: context.text.labelSmall
-                          ?.copyWith(color: palette.accent),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text('Create your account', style: context.text.displaySmall),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Your answers are saved — this is the last step.',
+                      'Already have an account? ',
                       style: context.text.bodyMedium
                           ?.copyWith(color: palette.textSecondary),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
-
-                    AppTextField(
-                      label: 'Username',
-                      controller: _username,
-                      hint: 'e.g. iron_kunal',
-                      prefixIcon: Icons.alternate_email_rounded,
-                      enabled: !busy,
-                      autofillHints: const <String>[AutofillHints.newUsername],
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                        LengthLimitingTextInputFormatter(
-                          AppConfig.usernameMaxLength,
+                    GestureDetector(
+                      onTap: busy
+                          ? null
+                          : () =>
+                              Navigator.of(context).pushNamed(AppRoutes.login),
+                      child: Text(
+                        'Sign in',
+                        style: context.text.bodyMedium?.copyWith(
+                          color: palette.accent,
+                          fontWeight: FontWeight.w700,
                         ),
-                      ],
-                      validator: Validators.username,
-                      errorText: _usernameServerError,
-                      statusWidget: _checkingAvailability
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : null,
-                      onChanged: (_) {
-                        if (_usernameServerError != null) {
-                          setState(() => _usernameServerError = null);
-                        }
-                        _scheduleAvailabilityCheck();
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    AppTextField(
-                      label: 'Full name',
-                      controller: _fullName,
-                      hint: 'Your name as you want it shown',
-                      prefixIcon: Icons.person_outline_rounded,
-                      enabled: !busy,
-                      keyboardType: TextInputType.name,
-                      textCapitalization: TextCapitalization.words,
-                      autofillHints: const <String>[AutofillHints.name],
-                      inputFormatters: <TextInputFormatter>[
-                        LengthLimitingTextInputFormatter(
-                          AppConfig.fullNameMaxLength,
-                        ),
-                      ],
-                      validator: Validators.fullName,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    AppTextField(
-                      label: 'Email',
-                      controller: _email,
-                      hint: 'you@example.com',
-                      prefixIcon: Icons.mail_outline_rounded,
-                      enabled: !busy,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const <String>[AutofillHints.email],
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                      ],
-                      validator: Validators.email,
-                      errorText: _emailServerError,
-                      onChanged: (_) {
-                        if (_emailServerError != null) {
-                          setState(() => _emailServerError = null);
-                        }
-                        _scheduleAvailabilityCheck();
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    AppTextField(
-                      label: 'Password',
-                      controller: _password,
-                      hint: 'At least ${AppConfig.passwordMinLength} characters',
-                      prefixIcon: Icons.lock_outline_rounded,
-                      obscure: true,
-                      enabled: !busy,
-                      textInputAction: TextInputAction.done,
-                      autofillHints: const <String>[AutofillHints.newPassword],
-                      inputFormatters: <TextInputFormatter>[
-                        LengthLimitingTextInputFormatter(
-                          AppConfig.passwordMaxLength,
-                        ),
-                      ],
-                      validator: Validators.password,
-                      onChanged: (String value) => setState(
-                        () => _passwordStrength =
-                            Validators.passwordStrength(value),
-                      ),
-                      onSubmitted: (_) => _submit(),
-                    ),
-                    PasswordStrengthBar(
-                      strength: _passwordStrength,
-                      label: Validators.strengthLabel(_passwordStrength),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xxl),
-                    PrimaryButton(
-                      label: 'Create account',
-                      isLoading: busy,
-                      onPressed: busy ? null : _submit,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Center(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          Text(
-                            'Already have an account? ',
-                            style: context.text.bodyMedium
-                                ?.copyWith(color: palette.textSecondary),
-                          ),
-                          GestureDetector(
-                            onTap: busy
-                                ? null
-                                : () => Navigator.of(context)
-                                    .pushNamed(AppRoutes.login),
-                            child: Text(
-                              'Sign in',
-                              style: context.text.bodyMedium?.copyWith(
-                                color: palette.accent,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         );
       },

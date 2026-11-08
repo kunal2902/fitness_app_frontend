@@ -31,7 +31,7 @@ class StreakCard extends StatelessWidget {
               Expanded(
                 child: _StreakStat(
                   icon: Icons.local_fire_department_rounded,
-                  tint: AppColors.ember,
+                  tint: palette.accent,
                   value: streak.currentDays,
                   label: 'Current streak',
                 ),
@@ -63,7 +63,7 @@ class StreakCard extends StatelessWidget {
                       ? Icons.bolt_rounded
                       : Icons.check_circle_rounded,
                   size: AppSize.iconSm,
-                  color: streak.isAtRisk ? AppColors.warning : palette.accent,
+                  color: streak.isAtRisk ? palette.warning : palette.accent,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
@@ -73,7 +73,7 @@ class StreakCard extends StatelessWidget {
                         : '${streak.totalWorkouts} sessions logged so far.',
                     style: context.text.bodySmall?.copyWith(
                       color: streak.isAtRisk
-                          ? AppColors.warning
+                          ? palette.warning
                           : palette.textTertiary,
                     ),
                   ),
@@ -130,8 +130,9 @@ class _StreakStat extends StatelessWidget {
               // are part of the plan and must not break a streak.
               Text(
                 value == 1 ? 'session' : 'sessions',
-                style: context.text.bodySmall
-                    ?.copyWith(color: palette.textTertiary),
+                style: context.text.bodySmall?.copyWith(
+                  color: palette.textTertiary,
+                ),
               ),
             ],
           ),
@@ -140,8 +141,10 @@ class _StreakStat extends StatelessWidget {
         Text(
           label.toUpperCase(),
           textAlign: TextAlign.center,
-          style: context.text.labelSmall
-              ?.copyWith(color: palette.textTertiary, fontSize: 10),
+          style: context.text.labelSmall?.copyWith(
+            color: palette.textTertiary,
+            fontSize: 10,
+          ),
         ),
       ],
     );

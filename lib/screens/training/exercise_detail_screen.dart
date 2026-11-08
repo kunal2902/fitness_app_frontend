@@ -142,12 +142,12 @@ class _ExerciseContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.sm,
+        AppSpacing.md,
         AppSpacing.lg,
         AppSpacing.xxl,
       ),
       children: <Widget>[
-        Text(exercise.name, style: context.text.headlineMedium),
+        Text(exercise.name, style: context.text.displaySmall),
         const SizedBox(height: AppSpacing.xs),
         Text(
           <String>[
@@ -155,10 +155,15 @@ class _ExerciseContent extends StatelessWidget {
             trainingLabel(exercise.trainingType),
             trainingLabel(exercise.loadingMode),
           ].join(' · '),
-          style: context.text.bodyLarge,
+          style: context.text.bodyMedium?.copyWith(
+            color: context.palette.textSecondary,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text(exercise.unilateral ? '$measurement per side' : measurement),
+        Text(
+          exercise.unilateral ? '$measurement per side' : measurement,
+          style: context.text.labelMedium,
+        ),
         const SizedBox(height: AppSpacing.lg),
         ExerciseDemo(
           key: ValueKey<String>(
@@ -293,8 +298,15 @@ class _TechniqueCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(numbered ? '${index + 1}.' : '•'),
-                    const SizedBox(width: AppSpacing.xs),
+                    SizedBox(
+                      width: AppSpacing.xl,
+                      child: Text(
+                        numbered ? '${index + 1}.' : '•',
+                        style: context.text.labelLarge?.copyWith(
+                          color: context.palette.textSecondary,
+                        ),
+                      ),
+                    ),
                     Expanded(child: Text(text)),
                   ],
                 ),

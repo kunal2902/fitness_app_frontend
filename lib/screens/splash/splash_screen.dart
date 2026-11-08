@@ -6,7 +6,6 @@ import '../../config/app_config.dart';
 import '../../routes/app_routes.dart';
 import '../../store/app_store.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/glow_background.dart';
 
 /// Decides where a cold start lands: home if there is a valid session,
 /// otherwise the welcome screen (or straight back into onboarding if the
@@ -109,9 +108,7 @@ class _SplashScreenState extends State<SplashScreen>
           b.status == AuthFlowStatus.unauthenticated,
       listener: (BuildContext context, AuthState state) => _route(state),
       child: Scaffold(
-        body: GlowBackground(
-          alignment: Alignment.center,
-          size: 520,
+        body: SafeArea(
           child: Center(
             child: FadeTransition(
               opacity: _controller,
@@ -129,18 +126,20 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 96,
                       width: 96,
                       decoration: BoxDecoration(
-                        gradient: AppColors.voltGradient,
-                        borderRadius: AppRadius.rXl,
+                        color: palette.surface,
+                        border: Border.all(color: palette.borderStrong),
+                        borderRadius: AppRadius.rLg,
                       ),
                       child: Icon(
                         Icons.bolt_rounded,
                         size: 54,
-                        color: palette.onAccent,
+                        color: palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
                       AppConfig.appName.toUpperCase(),
+                      textAlign: TextAlign.center,
                       style: context.text.headlineMedium?.copyWith(
                         letterSpacing: 4,
                         fontWeight: FontWeight.w800,
@@ -149,6 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       'TRAIN WITH INTENT',
+                      textAlign: TextAlign.center,
                       style: context.text.labelSmall?.copyWith(
                         color: palette.textTertiary,
                       ),

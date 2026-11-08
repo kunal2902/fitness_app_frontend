@@ -34,7 +34,6 @@ class OptionListStep<T extends SelectableOption> extends StatelessWidget {
       totalSteps: OnboardingData.totalSteps,
       title: title,
       subtitle: subtitle,
-      scrollable: true,
       child: Column(
         children: options
             .map(

@@ -15,7 +15,6 @@ import '../../theme/app_theme.dart';
 import '../../utils/diary_date.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/diary_date_bar.dart';
-import '../../widgets/glow_background.dart';
 import 'food_search_screen.dart';
 import 'nutrition_navigation.dart';
 import 'nutrition_target_sheet.dart';
@@ -148,7 +147,9 @@ class _NutritionScreenState extends State<NutritionScreen>
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -193,34 +194,49 @@ class _NutritionScreenState extends State<NutritionScreen>
         icon: const Icon(Icons.add_rounded),
         label: const Text('Log food'),
       ),
-      body: GlowBackground(
-        alignment: const Alignment(0, -0.95),
-        child: SafeArea(
-          child: BlocListener<MealLogBloc, MealLogState>(
-            // Status as well as revision. The bloc computes `revision`
-            // once per operation and emits it TWICE — saving, then success
-            // or failure — so watching revision alone means the terminal
-            // state never fires and every outcome is swallowed.
-            listenWhen: (MealLogState a, MealLogState b) =>
-                a.mutation.revision != b.mutation.revision ||
-                a.mutation.status != b.mutation.status,
-            listener: _onMutation,
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xs,
-                    AppSpacing.xs,
-                    AppSpacing.xs,
-                    0,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: SafeArea(
+            child: BlocListener<MealLogBloc, MealLogState>(
+              // Status as well as revision. The bloc computes `revision`
+              // once per operation and emits it TWICE — saving, then success
+              // or failure — so watching revision alone means the terminal
+              // state never fires and every outcome is swallowed.
+              listenWhen: (MealLogState a, MealLogState b) =>
+                  a.mutation.revision != b.mutation.revision ||
+                  a.mutation.status != b.mutation.status,
+              listener: _onMutation,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.xs,
+                    ),
+                    child: Text(
+                      'Nutrition',
+                      style: context.text.displaySmall,
+                    ),
                   ),
-                  child: _DateBar(
-                    date: _date,
-                    onChanged: _changeDate,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.xs,
+                      AppSpacing.lg,
+                      AppSpacing.xs,
+                    ),
+                    child: _DateBar(
+                      date: _date,
+                      onChanged: _changeDate,
+                    ),
                   ),
-                ),
-                Expanded(child: _body()),
-              ],
+                  Expanded(child: _body()),
+                ],
+              ),
             ),
           ),
         ),
@@ -518,7 +534,7 @@ class _SaveMealNameDialogState extends State<_SaveMealNameDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        TextButton(onPressed: _save, child: const Text('Save meal')),
+        FilledButton(onPressed: _save, child: const Text('Save meal')),
       ],
     );
   }
@@ -549,18 +565,18 @@ class _FailedSavesBanner extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.warning.withValues(alpha: 0.12),
+            color: palette.surfaceAlt,
             borderRadius: AppRadius.rMd,
             border: Border.all(
-              color: AppColors.warning.withValues(alpha: 0.3),
+              color: palette.border,
             ),
           ),
           child: Row(
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.cloud_upload_outlined,
                 size: AppSize.iconMd,
-                color: AppColors.warning,
+                color: palette.warning,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -620,10 +636,10 @@ class _StaleStrip extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.sync_problem_rounded,
             size: AppSize.iconSm,
-            color: AppColors.warning,
+            color: palette.warning,
           ),
           const SizedBox(width: AppSpacing.xs),
           Expanded(
@@ -668,10 +684,10 @@ class _FailureCard extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(
+          Icon(
             Icons.cloud_off_rounded,
             size: 32,
-            color: AppColors.warning,
+            color: palette.warning,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(

@@ -78,15 +78,14 @@ class MealSectionCard extends StatelessWidget {
                   onPressed: onSave,
                   tooltip: 'Save $_title for reuse',
                   icon: const Icon(Icons.bookmark_add_outlined),
-                  color: palette.accent,
+                  color: palette.textSecondary,
                   constraints:
                       const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
-              IconButton(
+              IconButton.filled(
                 onPressed: onAdd,
                 tooltip: 'Add to $_title',
                 icon: const Icon(Icons.add_rounded),
-                color: palette.accent,
                 constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ],
@@ -103,9 +102,12 @@ class MealSectionCard extends StatelessWidget {
                     ?.copyWith(color: palette.textTertiary),
               ),
             )
-          else
+          else ...<Widget>[
+            const SizedBox(height: AppSpacing.xs),
             for (final FoodLog log in logs)
-              for (final (int index, FoodLogItem item) in log.items.indexed)
+              for (final (int index, FoodLogItem item)
+                  in log.items.indexed) ...<Widget>[
+                const Divider(endIndent: AppSpacing.xs),
                 _EntryRow(
                   log: log,
                   item: item,
@@ -116,6 +118,8 @@ class MealSectionCard extends StatelessWidget {
                   onEdit: () => onEditItem(log, index),
                   onDelete: () => onDeleteLog(log),
                 ),
+              ],
+          ],
         ],
       ),
     );

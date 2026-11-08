@@ -72,7 +72,7 @@ class _WeightStepState extends State<WeightStep> {
                   },
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.xl),
               MeasurementDisplayCard(
                 value: UnitConverter.weightValue(kg, unit),
                 unitLabel: unit.label,
@@ -120,7 +120,6 @@ class _WeightStepState extends State<WeightStep> {
                         );
                   },
                 ),
-              const Spacer(),
             ],
           ),
         );

@@ -41,7 +41,7 @@ class KcalRing extends StatelessWidget {
 
     // Over target is a *state*, so it takes a status colour — and it is
     // never colour alone: the caption below spells out how far over.
-    final Color arc = isOver ? AppColors.warning : palette.accent;
+    final Color arc = isOver ? palette.warning : palette.accent;
 
     final double remaining = hasGoal ? goal - consumed : 0;
 

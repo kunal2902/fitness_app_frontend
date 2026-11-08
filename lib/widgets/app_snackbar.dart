@@ -19,8 +19,8 @@ class AppSnackbar {
   }) {
     final AppPalette palette = context.palette;
     final (Color accent, IconData icon) = switch (kind) {
-      SnackKind.success => (AppColors.success, Icons.check_circle_rounded),
-      SnackKind.error => (AppColors.danger, Icons.error_rounded),
+      SnackKind.success => (palette.success, Icons.check_circle_rounded),
+      SnackKind.error => (palette.danger, Icons.error_rounded),
       SnackKind.info => (palette.accent, Icons.info_rounded),
     };
 
@@ -29,7 +29,6 @@ class AppSnackbar {
       ..showSnackBar(
         SnackBar(
           duration: duration,
-          backgroundColor: palette.surfaceHigh,
           content: Row(
             children: <Widget>[
               Icon(icon, color: accent, size: AppSize.iconMd),

@@ -48,7 +48,7 @@ class ChatBubble extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: failed
-            ? AppColors.danger.withValues(alpha: 0.16)
+            ? palette.danger.withValues(alpha: 0.10)
             : (isMine ? palette.accent : palette.surfaceAlt),
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(AppRadius.md),
@@ -62,7 +62,7 @@ class ChatBubble extends StatelessWidget {
         message.body,
         style: context.text.bodyMedium?.copyWith(
           color: failed
-              ? AppColors.danger
+              ? palette.danger
               : (isMine ? palette.onAccent : palette.textPrimary),
           height: 1.4,
         ),
@@ -72,8 +72,9 @@ class ChatBubble extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: showTail ? AppSpacing.sm : 3),
       child: Column(
-        crossAxisAlignment:
-            isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: <Widget>[
           if (failed && onRetry != null)
             GestureDetector(onTap: onRetry, child: bubble)
@@ -90,11 +91,7 @@ class ChatBubble extends StatelessWidget {
 }
 
 class _MetaLine extends StatelessWidget {
-  const _MetaLine({
-    required this.message,
-    required this.isMine,
-    this.onRetry,
-  });
+  const _MetaLine({required this.message, required this.isMine, this.onRetry});
 
   final ChatMessage message;
   final bool isMine;
@@ -110,16 +107,14 @@ class _MetaLine extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(
-              Icons.refresh_rounded,
-              size: 12,
-              color: AppColors.danger,
-            ),
+            Icon(Icons.refresh_rounded, size: 12, color: palette.danger),
             const SizedBox(width: 3),
             Text(
               'Not sent · tap to retry',
-              style: context.text.bodySmall
-                  ?.copyWith(color: AppColors.danger, fontSize: 11),
+              style: context.text.bodySmall?.copyWith(
+                color: palette.danger,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -131,8 +126,10 @@ class _MetaLine extends StatelessWidget {
       children: <Widget>[
         Text(
           _timeOf(message.createdAt),
-          style: context.text.bodySmall
-              ?.copyWith(color: palette.textTertiary, fontSize: 11),
+          style: context.text.bodySmall?.copyWith(
+            color: palette.textTertiary,
+            fontSize: 11,
+          ),
         ),
         if (isMine) ...<Widget>[
           const SizedBox(width: 4),
@@ -190,14 +187,13 @@ class _CallEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
-    final bool missed = message.callOutcome == CallOutcome.missed ||
+    final bool missed =
+        message.callOutcome == CallOutcome.missed ||
         message.callOutcome == CallOutcome.declined;
 
     final IconData icon = message.callWithVideo == false
         ? (missed ? Icons.phone_missed_rounded : Icons.phone_rounded)
-        : (missed
-            ? Icons.videocam_off_rounded
-            : Icons.videocam_rounded);
+        : (missed ? Icons.videocam_off_rounded : Icons.videocam_rounded);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -212,7 +208,7 @@ class _CallEntry extends StatelessWidget {
             borderRadius: AppRadius.rPill,
             border: Border.all(
               color: missed
-                  ? AppColors.danger.withValues(alpha: 0.35)
+                  ? palette.danger.withValues(alpha: 0.35)
                   : palette.border,
             ),
           ),
@@ -222,13 +218,13 @@ class _CallEntry extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: missed ? AppColors.danger : palette.textSecondary,
+                color: missed ? palette.danger : palette.textSecondary,
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 message.body,
                 style: context.text.bodySmall?.copyWith(
-                  color: missed ? AppColors.danger : palette.textSecondary,
+                  color: missed ? palette.danger : palette.textSecondary,
                   fontSize: 12,
                 ),
               ),

@@ -49,16 +49,13 @@ class FoodResultTile extends StatelessWidget {
                     food.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.bodyLarge,
+                    style: context.text.titleMedium,
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: <Widget>[
                       if (food.isRecipe) ...<Widget>[
-                        _Chip(
-                          label: 'Dish',
-                          tint: palette.accent,
-                        ),
+                        const _Chip(label: 'Dish'),
                         const SizedBox(width: AppSpacing.xxs),
                       ],
                       Flexible(
@@ -91,8 +88,8 @@ class FoodResultTile extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     '${kcal.round()} kcal',
-                    style: context.text.bodyMedium
-                        ?.copyWith(color: palette.textSecondary),
+                    style: context.text.labelLarge
+                        ?.copyWith(color: palette.textPrimary),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -124,23 +121,23 @@ class FoodResultTile extends StatelessWidget {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.tint});
+  const _Chip({required this.label});
 
   final String label;
-  final Color tint;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.14),
+        color: context.palette.surfaceAlt,
+        border: Border.all(color: context.palette.border),
         borderRadius: AppRadius.rXs,
       ),
       child: Text(
         label,
         style: context.text.labelSmall?.copyWith(
-          color: tint,
+          color: context.palette.textSecondary,
           fontSize: 10,
           letterSpacing: 0.2,
         ),

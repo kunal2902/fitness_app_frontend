@@ -33,12 +33,28 @@ class WorkoutCalendarCard extends StatelessWidget {
   final ValueChanged<DateTime> onMonthChanged;
 
   static const List<String> _weekdayLabels = <String>[
-    'M', 'T', 'W', 'T', 'F', 'S', 'S',
+    'M',
+    'T',
+    'W',
+    'T',
+    'F',
+    'S',
+    'S',
   ];
 
   static const List<String> _monthNames = <String>[
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   bool get _canGoForward {
@@ -94,8 +110,8 @@ class WorkoutCalendarCard extends StatelessWidget {
                 tooltip: 'Next month',
                 onPressed: _canGoForward
                     ? () => onMonthChanged(
-                          DateTime(visibleMonth.year, visibleMonth.month + 1),
-                        )
+                        DateTime(visibleMonth.year, visibleMonth.month + 1),
+                      )
                     : null,
               ),
             ],
@@ -126,10 +142,7 @@ class WorkoutCalendarCard extends StatelessWidget {
           AnimatedOpacity(
             duration: AppDuration.fast,
             opacity: isLoading ? 0.45 : 1,
-            child: _MonthGrid(
-              month: visibleMonth,
-              dayLookup: dayLookup,
-            ),
+            child: _MonthGrid(month: visibleMonth, dayLookup: dayLookup),
           ),
 
           const SizedBox(height: AppSpacing.md),
@@ -215,8 +228,8 @@ class _DayCell extends StatelessWidget {
         text = palette.onAccent;
         weight = FontWeight.w800;
       case WorkoutDayStatus.missed:
-        border = AppColors.danger.withValues(alpha: 0.55);
-        text = AppColors.danger;
+        border = palette.danger.withValues(alpha: 0.55);
+        text = palette.danger;
         weight = FontWeight.w600;
       case WorkoutDayStatus.planned:
         border = palette.accent.withValues(alpha: 0.6);
@@ -232,8 +245,9 @@ class _DayCell extends StatelessWidget {
       label: _semanticLabel(),
       child: Tooltip(
         message: day?.title ?? '',
-        triggerMode:
-            day?.title == null ? TooltipTriggerMode.manual : TooltipTriggerMode.tap,
+        triggerMode: day?.title == null
+            ? TooltipTriggerMode.manual
+            : TooltipTriggerMode.tap,
         child: Container(
           decoration: BoxDecoration(
             color: background,
@@ -320,7 +334,7 @@ class _Legend extends StatelessWidget {
         ),
         _LegendDot(
           fill: Colors.transparent,
-          border: AppColors.danger.withValues(alpha: 0.55),
+          border: palette.danger.withValues(alpha: 0.55),
           label: 'Missed',
         ),
         // In Previous mode the grey cells are rest days AND days that
@@ -353,7 +367,9 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(
             color: fill,
             shape: BoxShape.circle,
-            border: border == null ? null : Border.all(color: border!, width: 1.4),
+            border: border == null
+                ? null
+                : Border.all(color: border!, width: 1.4),
           ),
         ),
         const SizedBox(width: AppSpacing.xxs),

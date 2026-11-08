@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import '../../models/api_exception.dart';
 import '../../models/training_models.dart';
 import '../../routes/app_routes.dart';
+import '../home/discovery_artwork.dart';
 import '../../services/training_repository.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/section_card.dart';
 import 'training_ui.dart';
 
 class ExerciseLibraryScreen extends StatefulWidget {
@@ -294,6 +294,10 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
       for (final muscle in taxonomy?.muscles ?? const <TrainingMuscle>[])
         muscle.id: muscle.name,
     };
+    final muscleGroups = <String, String>{
+      for (final muscle in taxonomy?.muscles ?? const <TrainingMuscle>[])
+        muscle.id: muscle.group,
+    };
     final equipment = <String, String>{
       for (final item in taxonomy?.equipment ?? const <TrainingEquipment>[])
         item.id: item.name,
@@ -314,7 +318,12 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
         child: Column(
           children: <Widget>[
             Padding(
-              padding: AppSpacing.page,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -361,7 +370,12 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                           child: const Text('Reset'),
                         ),
                       if (_profileName != null)
-                        Text('My equipment: $_profileName'),
+                        Text(
+                          'My equipment: $_profileName',
+                          style: context.text.labelMedium?.copyWith(
+                            color: context.palette.textSecondary,
+                          ),
+                        ),
                     ],
                   ),
                   if (_taxonomyError != null &&
@@ -375,6 +389,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                 ],
               ),
             ),
+            const Divider(),
             if (_loading && _results.isNotEmpty)
               const LinearProgressIndicator(),
             Expanded(
@@ -404,6 +419,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                       child: _ExerciseTile(
                         exercise: exercise,
                         muscles: muscles,
+                        muscleGroups: muscleGroups,
                         equipment: equipment,
                       ),
                     );
@@ -467,12 +483,39 @@ class _ExerciseTile extends StatelessWidget {
   const _ExerciseTile({
     required this.exercise,
     required this.muscles,
+    required this.muscleGroups,
     required this.equipment,
   });
 
   final TrainingExercise exercise;
   final Map<String, String> muscles;
+
+  /// Muscle id to muscle group, so a bodyweight movement with no equipment to
+  /// show can fall back to the artwork for the region it trains.
+  final Map<String, String> muscleGroups;
   final Map<String, String> equipment;
+
+  /// The image behind the card.
+  ///
+  /// An approved poster from the catalogue wins: it is the only image that
+  /// actually shows this movement. Everything after it is category artwork
+  /// chosen for recognition, not instruction.
+  ImageProvider<Object>? _artwork() {
+    final TrainingMedia? poster = exercise.poster;
+    if (poster != null) return NetworkImage(poster.url);
+    return DiscoveryArtwork.exercise(
+      exerciseId: exercise.id,
+      equipmentIds: <String>[
+        for (final TrainingEquipmentRequirement group
+            in exercise.equipmentRequirementGroups)
+          ...group.anyOf,
+        ...exercise.optionalEquipmentIds,
+      ],
+      muscleGroup: exercise.primaryMuscleIds
+          .map((String id) => muscleGroups[id])
+          .firstWhere((String? group) => group != null, orElse: () => null),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -489,19 +532,111 @@ class _ExerciseTile extends StatelessWidget {
                     ? '($group)'
                     : group;
               }).join(' + ');
-    return SectionCard(
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.rLg),
-        leading: const Icon(Icons.fitness_center_outlined),
-        title: Text(exercise.name),
-        subtitle: Text(
-          '${trainingLabel(exercise.difficulty)} · $targets\n$equipmentText',
+    final ImageProvider<Object>? artwork = _artwork();
+    final AppPalette palette = context.palette;
+    final String meta =
+        '${trainingLabel(exercise.difficulty)} · $targets';
+
+    return Semantics(
+      button: true,
+      label: '${exercise.name}. $meta. $equipmentText',
+      child: Material(
+        color: palette.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.rMd,
+          side: BorderSide(color: palette.border),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed(AppRoutes.exerciseDetail, arguments: exercise.id),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(
+            context,
+          ).pushNamed(AppRoutes.exerciseDetail, arguments: exercise.id),
+          child: SizedBox(
+            // Tall enough for three lines of text at the app's 1.3 scaling
+            // cap without the scrim crowding the name.
+            height: 118 * MediaQuery.textScalerOf(context).scale(16) / 16,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                if (artwork != null)
+                  Image(
+                    image: artwork,
+                    fit: BoxFit.cover,
+                    // Category artwork is decorative; the Semantics label
+                    // above already names the exercise.
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                // Left-weighted so the text stays readable over any
+                // photograph while the image still shows on the right.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: artwork == null
+                          ? <Color>[palette.surface, palette.surface]
+                          : <Color>[
+                              Colors.black.withValues(alpha: 0.88),
+                              Colors.black.withValues(alpha: 0.35),
+                            ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              exercise.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.titleMedium?.copyWith(
+                                color: artwork == null ? null : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xxs),
+                            Text(
+                              meta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.bodySmall?.copyWith(
+                                color: artwork == null
+                                    ? palette.textSecondary
+                                    : Colors.white70,
+                              ),
+                            ),
+                            Text(
+                              equipmentText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.bodySmall?.copyWith(
+                                color: artwork == null
+                                    ? palette.textSecondary
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        color: artwork == null
+                            ? palette.textSecondary
+                            : Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -532,121 +667,145 @@ class _FilterSheetState extends State<_FilterSheet> {
   @override
   Widget build(BuildContext context) {
     final taxonomy = widget.taxonomy;
-    return ListView(
-      shrinkWrap: true,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.xxl,
+    final fields = <Widget>[
+      _choice(
+        'Muscle group',
+        _group,
+        <String, String>{
+          for (final group in taxonomy.muscleGroups) group.id: group.name,
+        },
+        (value) => setState(() {
+          _group = value;
+          _muscle = null;
+        }),
       ),
-      children: <Widget>[
-        Text('Exercise filters', style: context.text.headlineSmall),
-        const SizedBox(height: AppSpacing.md),
+      _choice(
+        'Muscle',
+        _muscle,
+        <String, String>{
+          for (final muscle in taxonomy.muscles)
+            if (_group == null || muscle.group == _group)
+              muscle.id: muscle.name,
+        },
+        (value) => setState(() => _muscle = value),
+      ),
+      if (_group != null || _muscle != null)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Primary target only'),
+          value: _primaryOnly,
+          onChanged: (value) => setState(() => _primaryOnly = value),
+        ),
+      _choice(
+        'Equipment',
+        _equipment.name,
+        const <String, String>{
+          'none': 'No required equipment',
+          'profile': 'Fits my active equipment profile',
+          'uses': 'Uses selected equipment',
+        },
+        (value) => setState(
+          () => _equipment = _EquipmentFilter.values.byName(value ?? 'any'),
+        ),
+      ),
+      if (_equipment == _EquipmentFilter.uses)
         _choice(
-          'Muscle group',
-          _group,
+          'Equipment used',
+          _equipmentId,
           <String, String>{
-            for (final group in taxonomy.muscleGroups) group.id: group.name,
+            for (final item in taxonomy.equipment) item.id: item.name,
           },
-          (value) => setState(() {
-            _group = value;
-            _muscle = null;
-          }),
+          (value) => setState(() => _equipmentId = value),
+          emptyLabel: 'Choose equipment',
         ),
-        _choice(
-          'Muscle',
-          _muscle,
-          <String, String>{
-            for (final muscle in taxonomy.muscles)
-              if (_group == null || muscle.group == _group)
-                muscle.id: muscle.name,
-          },
-          (value) => setState(() => _muscle = value),
+      _choice(
+        'Difficulty',
+        _difficulty,
+        _labels(taxonomy.difficulties),
+        (value) => setState(() => _difficulty = value),
+      ),
+      _choice(
+        'Training type',
+        _trainingType,
+        _labels(taxonomy.trainingTypes),
+        (value) => setState(() => _trainingType = value),
+      ),
+      _choice(
+        'Movement',
+        _movement,
+        _labels(taxonomy.movementPatternIds),
+        (value) => setState(() => _movement = value),
+      ),
+      _choice(
+        'Loading',
+        _loadingMode,
+        _labels(const <String>['bodyweight', 'added_load', 'assisted']),
+        (value) => setState(() => _loadingMode = value),
+      ),
+      _choice(
+        'Sort by',
+        _sort,
+        const <String, String>{'name': 'Name', 'difficulty': 'Difficulty'},
+        (value) => setState(() => _sort = value ?? 'relevance'),
+        emptyLabel: 'Relevance',
+      ),
+    ];
+
+    return FractionallySizedBox(
+      heightFactor: 0.9,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              child: Text(
+                'Exercise filters',
+                style: context.text.headlineSmall,
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                children: fields,
+              ),
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: FilledButton(
+                onPressed: _equipment == _EquipmentFilter.uses &&
+                        !taxonomy.equipment
+                            .any((item) => item.id == _equipmentId)
+                    ? null
+                    : () => Navigator.of(context).pop(
+                          _LibraryFilters(
+                            muscleGroup: _group,
+                            muscleId: _muscle,
+                            primaryOnly: _primaryOnly &&
+                                (_group != null || _muscle != null),
+                            equipment: _equipment,
+                            equipmentId: _equipmentId,
+                            difficulty: _difficulty,
+                            movement: _movement,
+                            trainingType: _trainingType,
+                            loadingMode: _loadingMode,
+                            sort: _sort,
+                          ),
+                        ),
+                child: const Text('Apply filters'),
+              ),
+            ),
+          ],
         ),
-        if (_group != null || _muscle != null)
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Primary target only'),
-            value: _primaryOnly,
-            onChanged: (value) => setState(() => _primaryOnly = value),
-          ),
-        _choice(
-          'Equipment',
-          _equipment.name,
-          const <String, String>{
-            'none': 'No required equipment',
-            'profile': 'Fits my active equipment profile',
-            'uses': 'Uses selected equipment',
-          },
-          (value) => setState(
-            () => _equipment = _EquipmentFilter.values.byName(value ?? 'any'),
-          ),
-        ),
-        if (_equipment == _EquipmentFilter.uses)
-          _choice(
-            'Equipment used',
-            _equipmentId,
-            <String, String>{
-              for (final item in taxonomy.equipment) item.id: item.name,
-            },
-            (value) => setState(() => _equipmentId = value),
-            emptyLabel: 'Choose equipment',
-          ),
-        _choice(
-          'Difficulty',
-          _difficulty,
-          _labels(taxonomy.difficulties),
-          (value) => setState(() => _difficulty = value),
-        ),
-        _choice(
-          'Training type',
-          _trainingType,
-          _labels(taxonomy.trainingTypes),
-          (value) => setState(() => _trainingType = value),
-        ),
-        _choice(
-          'Movement',
-          _movement,
-          _labels(taxonomy.movementPatternIds),
-          (value) => setState(() => _movement = value),
-        ),
-        _choice(
-          'Loading',
-          _loadingMode,
-          _labels(const <String>['bodyweight', 'added_load', 'assisted']),
-          (value) => setState(() => _loadingMode = value),
-        ),
-        _choice(
-          'Sort by',
-          _sort,
-          const <String, String>{'name': 'Name', 'difficulty': 'Difficulty'},
-          (value) => setState(() => _sort = value ?? 'relevance'),
-          emptyLabel: 'Relevance',
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        FilledButton(
-          onPressed: _equipment == _EquipmentFilter.uses &&
-                  !taxonomy.equipment.any((item) => item.id == _equipmentId)
-              ? null
-              : () => Navigator.of(context).pop(
-                    _LibraryFilters(
-                      muscleGroup: _group,
-                      muscleId: _muscle,
-                      primaryOnly:
-                          _primaryOnly && (_group != null || _muscle != null),
-                      equipment: _equipment,
-                      equipmentId: _equipmentId,
-                      difficulty: _difficulty,
-                      movement: _movement,
-                      trainingType: _trainingType,
-                      loadingMode: _loadingMode,
-                      sort: _sort,
-                    ),
-                  ),
-          child: const Text('Apply filters'),
-        ),
-      ],
+      ),
     );
   }
 

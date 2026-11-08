@@ -11,7 +11,6 @@ import '../../services/nutrition_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/nutrition_math.dart';
 import '../../widgets/app_snackbar.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/macro_meter.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/quantity_stepper.dart';
@@ -366,30 +365,46 @@ class _PortionPickerScreenState extends State<PortionPickerScreen> {
         ),
         body: AbsorbPointer(
           absorbing: _saving,
-          child: GlowBackground(
-            alignment: const Alignment(0, -0.9),
-            child: SafeArea(
-              top: false,
-              child: _content(food),
+          child: SafeArea(
+            top: false,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: _content(food),
+              ),
             ),
           ),
         ),
         bottomNavigationBar: food == null || _serving == null
             ? null
-            : SafeArea(
-                minimum: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.md,
+            : DecoratedBox(
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  border: Border(top: BorderSide(color: palette.border)),
                 ),
-                child: PrimaryButton(
-                  label: _isEditing
-                      ? 'Save changes'
-                      : 'Add to ${_mealType.label.toLowerCase()}',
-                  icon: _isEditing ? Icons.check_rounded : Icons.add_rounded,
-                  isLoading: _saving,
-                  onPressed: _grams > 0 && !_saving ? _submit : null,
+                child: SafeArea(
+                  minimum: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: Center(
+                    heightFactor: 1,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: PrimaryButton(
+                        label: _isEditing
+                            ? 'Save changes'
+                            : 'Add to ${_mealType.label.toLowerCase()}',
+                        icon: _isEditing
+                            ? Icons.check_rounded
+                            : Icons.add_rounded,
+                        isLoading: _saving,
+                        onPressed: _grams > 0 && !_saving ? _submit : null,
+                      ),
+                    ),
+                  ),
                 ),
               ),
       ),
@@ -482,7 +497,7 @@ class _PortionPickerScreenState extends State<PortionPickerScreen> {
                   'The portion you logged is no longer available for this '
                   'food, so it has been reset. Check it before saving.',
                   style: context.text.bodySmall
-                      ?.copyWith(color: AppColors.warning, height: 1.4),
+                      ?.copyWith(color: context.palette.warning, height: 1.4),
                 ),
               ],
             ],

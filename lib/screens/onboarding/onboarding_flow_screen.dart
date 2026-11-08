@@ -6,7 +6,6 @@ import '../../models/onboarding_data.dart';
 import '../../routes/app_routes.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_snackbar.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/step_progress_bar.dart';
 import 'steps/dips_step.dart';
@@ -81,8 +80,9 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
     // Last page: everything must be answered before we move to signup.
     // Swiping past a question is allowed, so catch the gap here.
     if (!state.data.isComplete) {
-      final int missing = List<int>.generate(OnboardingData.totalSteps, (int i) => i)
-          .firstWhere((int i) => !state.data.isStepAnswered(i));
+      final int missing =
+          List<int>.generate(OnboardingData.totalSteps, (int i) => i)
+              .firstWhere((int i) => !state.data.isStepAnswered(i));
       AppSnackbar.error(
         context,
         'Question ${missing + 1} still needs an answer.',
@@ -117,86 +117,95 @@ class _OnboardingFlowScreenState extends State<OnboardingFlowScreen> {
             context.read<OnboardingBloc>().add(const OnboardingBackRequested());
           },
           child: Scaffold(
-            body: GlowBackground(
-              child: SafeArea(
-                child: Column(
-                  children: <Widget>[
-                    // ---- Header -------------------------------------------
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.sm,
-                        AppSpacing.lg,
-                        AppSpacing.md,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          AnimatedOpacity(
-                            duration: AppDuration.fast,
-                            opacity: state.isFirstStep ? 0 : 1,
-                            child: IgnorePointer(
-                              ignoring: state.isFirstStep,
-                              child: CircleIconButton(
-                                icon: Icons.arrow_back_rounded,
-                                tooltip: 'Previous question',
-                                onPressed: () => context
-                                    .read<OnboardingBloc>()
-                                    .add(const OnboardingBackRequested()),
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Column(
+                    children: <Widget>[
+                      // ---- Header -------------------------------------------
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl,
+                          AppSpacing.sm,
+                          AppSpacing.xl,
+                          AppSpacing.sm,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            AnimatedOpacity(
+                              duration: AppDuration.fast,
+                              opacity: state.isFirstStep ? 0 : 1,
+                              child: IgnorePointer(
+                                ignoring: state.isFirstStep,
+                                child: CircleIconButton(
+                                  icon: Icons.arrow_back_rounded,
+                                  tooltip: 'Previous question',
+                                  onPressed: () => context
+                                      .read<OnboardingBloc>()
+                                      .add(const OnboardingBackRequested()),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: StepProgressBar(
-                              currentStep: state.currentStep,
-                              totalSteps: state.totalSteps,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          SizedBox(
-                            width: 44,
-                            child: Text(
-                              '${state.currentStep + 1}/${state.totalSteps}',
-                              textAlign: TextAlign.end,
-                              style: context.text.labelMedium?.copyWith(
-                                color: palette.textTertiary,
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: StepProgressBar(
+                                currentStep: state.currentStep,
+                                totalSteps: state.totalSteps,
                               ),
                             ),
+                            const SizedBox(width: AppSpacing.md),
+                            ExcludeSemantics(
+                              child: Text(
+                                '${state.currentStep + 1}/${state.totalSteps}',
+                                textAlign: TextAlign.end,
+                                style: context.text.labelMedium?.copyWith(
+                                  color: palette.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ---- Pages --------------------------------------------
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          onPageChanged: (int index) => context
+                              .read<OnboardingBloc>()
+                              .add(OnboardingStepChanged(index)),
+                          children: _steps,
+                        ),
+                      ),
+
+                      // ---- Footer -------------------------------------------
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: palette.bg,
+                          border:
+                              Border(top: BorderSide(color: palette.border)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.xl,
+                            AppSpacing.md,
+                            AppSpacing.xl,
+                            AppSpacing.lg,
                           ),
-                        ],
+                          child: PrimaryButton(
+                            label: state.isLastStep
+                                ? 'Create account'
+                                : 'Continue',
+                            icon: Icons.arrow_forward_rounded,
+                            onPressed: state.canAdvance
+                                ? () => _handleContinue(state)
+                                : null,
+                          ),
+                        ),
                       ),
-                    ),
-
-                    // ---- Pages --------------------------------------------
-                    Expanded(
-                      child: PageView(
-                        controller: _pageController,
-                        onPageChanged: (int index) => context
-                            .read<OnboardingBloc>()
-                            .add(OnboardingStepChanged(index)),
-                        children: _steps,
-                      ),
-                    ),
-
-                    // ---- Footer -------------------------------------------
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.sm,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                      ),
-                      child: PrimaryButton(
-                        label: state.isLastStep ? 'Create account' : 'Continue',
-                        icon: state.isLastStep
-                            ? Icons.arrow_forward_rounded
-                            : null,
-                        onPressed: state.canAdvance
-                            ? () => _handleContinue(state)
-                            : null,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

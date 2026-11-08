@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -57,8 +58,8 @@ class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
 
     // A refresh failing deep inside a request has no BuildContext — the
     // API client calls back here and the AuthBloc handles the logout.
-    ApiClient.instance.onSessionExpired =
-        () => _authBloc.add(const AuthSessionExpired());
+    ApiClient.instance.onSessionExpired = () =>
+        _authBloc.add(const AuthSessionExpired());
 
     _superviseSocket();
   }
@@ -139,8 +140,9 @@ class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
   /// authenticated endpoint triggers the normal refresh path, after which
   /// the socket can reconnect with the new token.
   void _superviseSocket() {
-    _socketStatusSub =
-        SocketService.instance.statusStream.listen((SocketStatus status) async {
+    _socketStatusSub = SocketService.instance.statusStream.listen((
+      SocketStatus status,
+    ) async {
       if (status != SocketStatus.unauthorized) return;
       if (_recoveringSocketAuth) return;
       if (!AppStore.instance.isAuthenticated) return;
@@ -216,15 +218,20 @@ class _FitnessAppState extends State<FitnessApp> with WidgetsBindingObserver {
                     // call layouts never break on aggressive accessibility
                     // settings.
                     final MediaQueryData mq = MediaQuery.of(context);
-                    return MediaQuery(
-                      data: mq.copyWith(
-                        textScaler: mq.textScaler.clamp(
-                          minScaleFactor: 0.85,
-                          maxScaleFactor: 1.3,
+                    return AnnotatedRegion<SystemUiOverlayStyle>(
+                      value:
+                          context.theme.appBarTheme.systemOverlayStyle ??
+                          SystemUiOverlayStyle.light,
+                      child: MediaQuery(
+                        data: mq.copyWith(
+                          textScaler: mq.textScaler.clamp(
+                            minScaleFactor: 0.85,
+                            maxScaleFactor: 1.3,
+                          ),
                         ),
-                      ),
-                      child: CallOverlay(
-                        child: child ?? const SizedBox.shrink(),
+                        child: CallOverlay(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     );
                   },

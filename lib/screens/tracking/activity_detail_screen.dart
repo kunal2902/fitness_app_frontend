@@ -8,7 +8,6 @@ import '../../services/tracking_activity_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/tracking_format.dart';
 import '../../widgets/activity_route_map.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/section_card.dart';
 
 class ActivityDetailArguments {
@@ -86,7 +85,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                style: TextButton.styleFrom(
+                  foregroundColor: context.palette.danger,
+                ),
                 child: const Text('Delete'),
               ),
             ],
@@ -123,49 +124,51 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           ),
         ],
       ),
-      body: GlowBackground(
-        alignment: const Alignment(0, -0.9),
-        child: RefreshIndicator(
-          onRefresh: _refresh,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.huge,
-            ),
-            children: <Widget>[
-              Text(
-                formatActivityDate(_activity.startedAt),
-                style: context.text.bodyMedium?.copyWith(
-                  color: context.palette.textSecondary,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.huge,
+              ),
+              children: <Widget>[
+                Text(
+                  formatActivityDate(_activity.startedAt),
+                  style: context.text.bodyMedium?.copyWith(
+                    color: context.palette.textSecondary,
+                  ),
                 ),
-              ),
-              if (_loading) ...<Widget>[
-                const SizedBox(height: AppSpacing.sm),
-                const LinearProgressIndicator(),
+                if (_loading) ...<Widget>[
+                  const SizedBox(height: AppSpacing.sm),
+                  const LinearProgressIndicator(),
+                ],
+                if (_error != null) ...<Widget>[
+                  const SizedBox(height: AppSpacing.sm),
+                  _InlineError(message: _error!, onRetry: _refresh),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                ActivityRouteMap(
+                  encodedPolyline: _activity.encodedPolyline,
+                  splits: _activity.routeSplits,
+                  height: 300,
+                  forceFallback: widget.forceMapFallback,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SummaryGrid(activity: _activity),
+                const SizedBox(height: AppSpacing.md),
+                _SplitsCard(splits: _activity.splits),
+                const SizedBox(height: AppSpacing.md),
+                _ElevationCard(activity: _activity),
+                const SizedBox(height: AppSpacing.md),
+                _HeartRateCard(activity: _activity),
               ],
-              if (_error != null) ...<Widget>[
-                const SizedBox(height: AppSpacing.sm),
-                _InlineError(message: _error!, onRetry: _refresh),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              ActivityRouteMap(
-                encodedPolyline: _activity.encodedPolyline,
-                splits: _activity.routeSplits,
-                height: 300,
-                forceFallback: widget.forceMapFallback,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SummaryGrid(activity: _activity),
-              const SizedBox(height: AppSpacing.md),
-              _SplitsCard(splits: _activity.splits),
-              const SizedBox(height: AppSpacing.md),
-              _ElevationCard(activity: _activity),
-              const SizedBox(height: AppSpacing.md),
-              _HeartRateCard(activity: _activity),
-            ],
+            ),
           ),
         ),
       ),
@@ -218,7 +221,6 @@ class _SummaryGrid extends StatelessWidget {
                   label: 'Active energy',
                   value: '${activity.calories.round()} kcal',
                   icon: Icons.local_fire_department_outlined,
-                  accent: AppColors.ember,
                 ),
               ),
             ],
@@ -361,7 +363,7 @@ class _HeartRateCard extends StatelessWidget {
               children: <Widget>[
                 _ActivityLineChart(
                   points: points,
-                  color: AppColors.ember,
+                  color: context.palette.accent,
                   semanticLabel: 'Heart-rate chart',
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -579,7 +581,10 @@ class _InlineError extends StatelessWidget {
     return SectionCard(
       child: Row(
         children: <Widget>[
-          const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+          Icon(
+            Icons.error_outline_rounded,
+            color: context.palette.danger,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(message)),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

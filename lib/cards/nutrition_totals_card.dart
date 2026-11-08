@@ -31,7 +31,6 @@ class NutritionTotalsCard extends StatelessWidget {
     final NutritionTarget? target = summary.target;
 
     return SectionCard(
-      gradient: true,
       // From the data, not a constant. Page back three days and a card
       // headed TODAY over Friday's ring is the one place the header
       // outright contradicts the day being shown. `summary.date` is the

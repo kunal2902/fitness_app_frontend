@@ -19,7 +19,6 @@ import '../../theme/app_theme.dart';
 import '../../utils/tracking_format.dart';
 import '../../widgets/activity_route_map.dart';
 import '../../widgets/app_snackbar.dart';
-import '../../widgets/glow_background.dart';
 import '../../widgets/health_connect_card.dart';
 import '../../widgets/recent_activities.dart';
 import '../../widgets/section_card.dart';
@@ -144,7 +143,9 @@ class _TrackingScreenState extends State<TrackingScreen>
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Discard'),
           ),
@@ -189,92 +190,96 @@ class _TrackingScreenState extends State<TrackingScreen>
         ],
         child: Scaffold(
           backgroundColor: context.palette.bg,
-          body: GlowBackground(
-            alignment: const Alignment(0, -0.95),
-            child: SafeArea(
-              child: BlocBuilder<TrackingRecorderCubit, TrackingRecorderState>(
-                builder: (BuildContext context, TrackingRecorderState state) {
-                  return BlocBuilder<HealthSyncCubit, HealthSyncState>(
-                    builder: (BuildContext context, HealthSyncState health) {
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          await Future.wait<void>(<Future<void>>[
-                            _cubit.refresh(showBusy: true),
-                            _healthCubit.refresh(),
-                            _activityCubit.refresh(),
-                          ]);
-                        },
-                        color: context.palette.accent,
-                        backgroundColor: context.palette.surfaceHigh,
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.huge,
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: SafeArea(
+                child:
+                    BlocBuilder<TrackingRecorderCubit, TrackingRecorderState>(
+                  builder: (BuildContext context, TrackingRecorderState state) {
+                    return BlocBuilder<HealthSyncCubit, HealthSyncState>(
+                      builder: (BuildContext context, HealthSyncState health) {
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            await Future.wait<void>(<Future<void>>[
+                              _cubit.refresh(showBusy: true),
+                              _healthCubit.refresh(),
+                              _activityCubit.refresh(),
+                            ]);
+                          },
+                          color: context.palette.accent,
+                          backgroundColor: context.palette.surfaceHigh,
+                          child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              AppSpacing.lg,
+                              AppSpacing.huge,
+                            ),
+                            children: <Widget>[
+                              Text(
+                                'Tracking',
+                                style: context.text.displaySmall,
+                              ),
+                              const SizedBox(height: AppSpacing.xxs),
+                              Text(
+                                'Record workouts and keep daily health in one place.',
+                                style: context.text.bodyMedium?.copyWith(
+                                  color: context.palette.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                              if (!state.initialized)
+                                const _LoadingCard()
+                              else if (state.session.isActive)
+                                _LiveRecorderCard(
+                                  state: state,
+                                  onPause: _cubit.pause,
+                                  onResume: _cubit.resume,
+                                  onStop: _confirmStop,
+                                  onDiscard: _confirmDiscard,
+                                )
+                              else
+                                _RecorderReadyCard(
+                                  state: state,
+                                  onStart: _cubit.start,
+                                  onRequestPermissions:
+                                      _cubit.requestPermissions,
+                                  onOpenAppSettings: _cubit.openAppSettings,
+                                  onOpenLocationSettings:
+                                      _cubit.openLocationSettings,
+                                ),
+                              const SizedBox(height: AppSpacing.md),
+                              HealthConnectCard(
+                                state: health,
+                                onConnect: _healthCubit.connect,
+                                onInstall: _healthCubit.installProvider,
+                                onOpenSettings: _healthCubit.openSettings,
+                                onRefresh: _healthCubit.refresh,
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              BlocBuilder<ActivityFeedCubit, ActivityFeedState>(
+                                builder: (
+                                  BuildContext context,
+                                  ActivityFeedState activities,
+                                ) {
+                                  return RecentActivities(
+                                    state: activities,
+                                    onRetry: _activityCubit.refresh,
+                                    onOpen: _openActivity,
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              const _PrivacyCard(),
+                            ],
                           ),
-                          children: <Widget>[
-                            Text(
-                              'Tracking',
-                              style: context.text.headlineMedium,
-                            ),
-                            const SizedBox(height: AppSpacing.xxs),
-                            Text(
-                              'Record workouts and keep daily health in one place.',
-                              style: context.text.bodyMedium?.copyWith(
-                                color: context.palette.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            if (!state.initialized)
-                              const _LoadingCard()
-                            else if (state.session.isActive)
-                              _LiveRecorderCard(
-                                state: state,
-                                onPause: _cubit.pause,
-                                onResume: _cubit.resume,
-                                onStop: _confirmStop,
-                                onDiscard: _confirmDiscard,
-                              )
-                            else
-                              _RecorderReadyCard(
-                                state: state,
-                                onStart: _cubit.start,
-                                onRequestPermissions: _cubit.requestPermissions,
-                                onOpenAppSettings: _cubit.openAppSettings,
-                                onOpenLocationSettings:
-                                    _cubit.openLocationSettings,
-                              ),
-                            const SizedBox(height: AppSpacing.md),
-                            HealthConnectCard(
-                              state: health,
-                              onConnect: _healthCubit.connect,
-                              onInstall: _healthCubit.installProvider,
-                              onOpenSettings: _healthCubit.openSettings,
-                              onRefresh: _healthCubit.refresh,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            BlocBuilder<ActivityFeedCubit, ActivityFeedState>(
-                              builder: (
-                                BuildContext context,
-                                ActivityFeedState activities,
-                              ) {
-                                return RecentActivities(
-                                  state: activities,
-                                  onRetry: _activityCubit.refresh,
-                                  onOpen: _openActivity,
-                                );
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            const _PrivacyCard(),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -353,15 +358,15 @@ class _RecorderReadyCard extends StatelessWidget {
     }
 
     return SectionCard(
-      gradient: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: context.palette.accent.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+              color: context.palette.surfaceAlt,
+              border: Border.all(color: context.palette.border),
+              borderRadius: AppRadius.rSm,
             ),
             child: Icon(
               Icons.directions_run_rounded,
@@ -516,32 +521,45 @@ class _LiveRecorderCard extends StatelessWidget {
       TrackingSessionStatus.idle => 'Ready',
     };
     final Color statusColor = session.isPaused
-        ? AppColors.warning
+        ? context.palette.warning
         : session.isAcquiring
             ? context.palette.textSecondary
-            : AppColors.success;
+            : context.palette.success;
 
     return SectionCard(
-      gradient: true,
       child: Column(
         children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.palette.surfaceAlt,
+              border: Border.all(color: context.palette.border),
+              borderRadius: AppRadius.rPill,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
               ),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                status.toUpperCase(),
-                style: context.text.labelSmall?.copyWith(color: statusColor),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    status.toUpperCase(),
+                    style:
+                        context.text.labelSmall?.copyWith(color: statusColor),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           if (session.isAcquiring) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
@@ -622,7 +640,9 @@ class _LiveRecorderCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: state.busy ? null : onDiscard,
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: Text(session.isAcquiring ? 'Cancel workout' : 'Discard'),
           ),
         ],

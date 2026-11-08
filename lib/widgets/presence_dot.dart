@@ -28,7 +28,7 @@ class PresenceDot extends StatelessWidget {
       width: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isOnline ? AppColors.success : palette.textTertiary,
+        color: isOnline ? palette.success : palette.textTertiary,
         border: Border.all(
           color: ringColor ?? palette.surface,
           width: size * 0.2,
@@ -40,11 +40,7 @@ class PresenceDot extends StatelessWidget {
 
 /// Text form — "Online", "Last seen 3h ago".
 class PresenceLabel extends StatelessWidget {
-  const PresenceLabel({
-    required this.isOnline,
-    required this.label,
-    super.key,
-  });
+  const PresenceLabel({required this.isOnline, required this.label, super.key});
 
   final bool isOnline;
   final String label;
@@ -64,7 +60,7 @@ class PresenceLabel extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.bodySmall?.copyWith(
-              color: isOnline ? AppColors.success : palette.textTertiary,
+              color: isOnline ? palette.success : palette.textTertiary,
               fontSize: 12,
             ),
           ),

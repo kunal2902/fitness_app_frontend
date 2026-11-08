@@ -95,15 +95,13 @@ class CertificationTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  certification.title,
-                  style: context.text.titleSmall,
-                ),
+                Text(certification.title, style: context.text.titleSmall),
                 const SizedBox(height: 2),
                 Text(
                   '${certification.issuer} · ${certification.year}',
-                  style: context.text.bodySmall
-                      ?.copyWith(color: palette.textTertiary),
+                  style: context.text.bodySmall?.copyWith(
+                    color: palette.textTertiary,
+                  ),
                 ),
               ],
             ),
@@ -123,17 +121,19 @@ class TransformationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
-    final String? before =
-        AppConfig.resolveMediaUrl(transformation.beforeImageUrl);
-    final String? after =
-        AppConfig.resolveMediaUrl(transformation.afterImageUrl);
+    final String? before = AppConfig.resolveMediaUrl(
+      transformation.beforeImageUrl,
+    );
+    final String? after = AppConfig.resolveMediaUrl(
+      transformation.afterImageUrl,
+    );
     final bool hasImages = before != null || after != null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        gradient: palette.cardGradient,
-        borderRadius: AppRadius.rLg,
+        color: palette.surface,
+        borderRadius: AppRadius.rMd,
         border: Border.all(color: palette.border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -193,8 +193,10 @@ class TransformationCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   transformation.summary,
-                  style: context.text.bodySmall
-                      ?.copyWith(color: palette.textSecondary, height: 1.5),
+                  style: context.text.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
                 if (transformation.highlights.isNotEmpty) ...<Widget>[
                   const SizedBox(height: AppSpacing.sm),
@@ -318,11 +320,7 @@ class AchievementTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            Icons.emoji_events_rounded,
-            size: AppSize.iconMd,
-            color: AppColors.warning,
-          ),
+          const Icon(Icons.emoji_events_rounded, size: AppSize.iconMd),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -341,8 +339,9 @@ class AchievementTile extends StatelessWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         '${achievement.year}',
-                        style: context.text.bodySmall
-                            ?.copyWith(color: palette.textTertiary),
+                        style: context.text.bodySmall?.copyWith(
+                          color: palette.textTertiary,
+                        ),
                       ),
                     ],
                   ],
@@ -350,8 +349,10 @@ class AchievementTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   achievement.description,
-                  style: context.text.bodySmall
-                      ?.copyWith(color: palette.textSecondary, height: 1.45),
+                  style: context.text.bodySmall?.copyWith(
+                    color: palette.textSecondary,
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),

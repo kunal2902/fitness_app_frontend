@@ -118,43 +118,48 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       // Confirmation lives here, not on the summary screen: the user is
       // sent straight back after adding, and a snackbar fired from a screen
       // that is being popped never appears.
-      body: BlocListener<MealLogBloc, MealLogState>(
-        // Status as well as revision: the bloc reuses one revision for
-        // the saving emission and the terminal one, so revision alone
-        // never sees success or failure.
-        listenWhen: (MealLogState a, MealLogState b) =>
-            a.mutation.revision != b.mutation.revision ||
-            a.mutation.status != b.mutation.status,
-        listener: _onMutation,
-        child: Column(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: _SearchField(
-                controller: _controller,
-                onChanged: (String value) => context
-                    .read<FoodSearchBloc>()
-                    .add(FoodSearchChanged(value)),
-                onClear: () {
-                  _controller.clear();
-                  context.read<FoodSearchBloc>().add(
-                        const FoodSearchChanged(''),
-                      );
-                },
-              ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: BlocListener<MealLogBloc, MealLogState>(
+            // Status as well as revision: the bloc reuses one revision for
+            // the saving emission and the terminal one, so revision alone
+            // never sees success or failure.
+            listenWhen: (MealLogState a, MealLogState b) =>
+                a.mutation.revision != b.mutation.revision ||
+                a.mutation.status != b.mutation.status,
+            listener: _onMutation,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: _SearchField(
+                    controller: _controller,
+                    onChanged: (String value) => context
+                        .read<FoodSearchBloc>()
+                        .add(FoodSearchChanged(value)),
+                    onClear: () {
+                      _controller.clear();
+                      context.read<FoodSearchBloc>().add(
+                            const FoodSearchChanged(''),
+                          );
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<FoodSearchBloc, FoodSearchState>(
+                    builder: (BuildContext context, FoodSearchState state) =>
+                        _results(state),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: BlocBuilder<FoodSearchBloc, FoodSearchState>(
-                builder: (BuildContext context, FoodSearchState state) =>
-                    _results(state),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -344,20 +349,6 @@ class _SearchField extends StatelessWidget {
               icon: Icon(Icons.close_rounded, color: palette.textTertiary),
             );
           },
-        ),
-        filled: true,
-        fillColor: palette.surface,
-        border: OutlineInputBorder(
-          borderRadius: AppRadius.rMd,
-          borderSide: BorderSide(color: palette.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: AppRadius.rMd,
-          borderSide: BorderSide(color: palette.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: AppRadius.rMd,
-          borderSide: BorderSide(color: palette.accent),
         ),
       ),
     );

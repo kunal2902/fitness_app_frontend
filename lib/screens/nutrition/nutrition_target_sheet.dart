@@ -33,7 +33,7 @@ class NutritionTargetSheet extends StatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      useSafeArea: true,
       builder: (BuildContext sheetContext) =>
           BlocProvider<NutritionSummaryBloc>.value(
         value: bloc,
@@ -244,117 +244,97 @@ class _NutritionTargetSheetState extends State<NutritionTargetSheet> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.xl),
-              ),
-              border: Border.all(color: palette.border),
-            ),
-            child: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Center(
-                      child: Container(
-                        height: 4,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: palette.borderStrong,
-                          borderRadius: AppRadius.rPill,
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text('Daily goals', style: context.text.headlineSmall),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    'Set what you are aiming for each day. You can change '
+                    'these at any time.',
+                    style: context.text.bodySmall
+                        ?.copyWith(color: palette.textTertiary, height: 1.5),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  NutritionTargetSetupForm(
+                    repository: context.read<NutritionRepository>(),
+                    profile: widget.profile,
+                    savedSetup: widget.current?.setup,
+                    onUseEstimate: _useEstimate,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _TargetField(
+                    controller: _kcal,
+                    label: 'Energy',
+                    suffix: 'kcal',
+                    tint: palette.accent,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _TargetField(
+                    controller: _protein,
+                    label: MacroKind.protein.label,
+                    suffix: 'g',
+                    tint: MacroPalette.protein,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _TargetField(
+                    controller: _carbs,
+                    label: MacroKind.carbs.label,
+                    suffix: 'g',
+                    tint: MacroPalette.carbs,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _TargetField(
+                    controller: _fat,
+                    label: MacroKind.fat.label,
+                    suffix: 'g',
+                    tint: MacroPalette.fat,
+                  ),
+                  if (_error != null) ...<Widget>[
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: AppSize.iconSm,
+                          color: palette.danger,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text('Daily goals', style: context.text.titleLarge),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      'Set what you are aiming for each day. You can change '
-                      'these at any time.',
-                      style: context.text.bodySmall
-                          ?.copyWith(color: palette.textTertiary, height: 1.5),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    NutritionTargetSetupForm(
-                      repository: context.read<NutritionRepository>(),
-                      profile: widget.profile,
-                      savedSetup: widget.current?.setup,
-                      onUseEstimate: _useEstimate,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _TargetField(
-                      controller: _kcal,
-                      label: 'Energy',
-                      suffix: 'kcal',
-                      tint: palette.accent,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _TargetField(
-                      controller: _protein,
-                      label: MacroKind.protein.label,
-                      suffix: 'g',
-                      tint: MacroPalette.protein,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _TargetField(
-                      controller: _carbs,
-                      label: MacroKind.carbs.label,
-                      suffix: 'g',
-                      tint: MacroPalette.carbs,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _TargetField(
-                      controller: _fat,
-                      label: MacroKind.fat.label,
-                      suffix: 'g',
-                      tint: MacroPalette.fat,
-                    ),
-                    if (_error != null) ...<Widget>[
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: AppSize.iconSm,
-                            color: AppColors.danger,
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: context.text.bodySmall
+                                ?.copyWith(color: palette.danger),
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: context.text.bodySmall
-                                  ?.copyWith(color: AppColors.danger),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.lg),
-                    BlocBuilder<NutritionSummaryBloc, NutritionSummaryState>(
-                      buildWhen: (
-                        NutritionSummaryState a,
-                        NutritionSummaryState b,
-                      ) =>
-                          a.targetSave.isSaving != b.targetSave.isSaving,
-                      builder: (
-                        BuildContext context,
-                        NutritionSummaryState state,
-                      ) {
-                        return PrimaryButton(
-                          label: 'Save goals',
-                          isLoading: state.targetSave.isSaving,
-                          onPressed: _submit,
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ],
-                ),
+                  const SizedBox(height: AppSpacing.lg),
+                  BlocBuilder<NutritionSummaryBloc, NutritionSummaryState>(
+                    buildWhen: (
+                      NutritionSummaryState a,
+                      NutritionSummaryState b,
+                    ) =>
+                        a.targetSave.isSaving != b.targetSave.isSaving,
+                    builder: (
+                      BuildContext context,
+                      NutritionSummaryState state,
+                    ) {
+                      return PrimaryButton(
+                        label: 'Save goals',
+                        isLoading: state.targetSave.isSaving,
+                        onPressed: _submit,
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),

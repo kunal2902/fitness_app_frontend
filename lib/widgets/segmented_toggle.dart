@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 
-/// A segmented control with a sliding pill behind the active segment.
+/// A segmented control with an inverted fill behind the active segment.
 ///
 /// Generic over the value type, so the same widget drives the cm/inches and
 /// kg/lbs toggles in onboarding and the previous/goal toggle on the
@@ -50,8 +50,8 @@ class SegmentedToggle<T> extends StatelessWidget {
       padding: EdgeInsets.all(dense ? 3 : 4),
       decoration: BoxDecoration(
         color: palette.surfaceAlt,
-        borderRadius: AppRadius.rPill,
-        border: Border.all(color: palette.border),
+        borderRadius: AppRadius.rMd,
+        border: Border.all(color: palette.borderStrong),
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -68,7 +68,7 @@ class SegmentedToggle<T> extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: palette.accent,
-                    borderRadius: AppRadius.rPill,
+                    borderRadius: AppRadius.rSm,
                   ),
                 ),
               ),
@@ -76,35 +76,40 @@ class SegmentedToggle<T> extends StatelessWidget {
                 children: values.map((T value) {
                   final bool isActive = value == selected;
                   return Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        if (isActive) return;
-                        HapticFeedback.selectionClick();
-                        onChanged(value);
-                      },
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xs,
-                          ),
-                          child: AnimatedDefaultTextStyle(
-                            duration: AppDuration.fast,
-                            style: (dense
-                                    ? context.text.labelSmall!
-                                    : context.text.labelMedium!)
-                                .copyWith(
-                              letterSpacing: dense ? 0.2 : null,
-                              color: isActive
-                                  ? palette.onAccent
-                                  : palette.textSecondary,
-                              fontWeight:
-                                  isActive ? FontWeight.w700 : FontWeight.w600,
+                    child: Semantics(
+                      button: true,
+                      selected: isActive,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (isActive) return;
+                          HapticFeedback.selectionClick();
+                          onChanged(value);
+                        },
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
                             ),
-                            child: Text(
-                              labelOf(value),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: AnimatedDefaultTextStyle(
+                              duration: AppDuration.fast,
+                              style: (dense
+                                      ? context.text.labelSmall!
+                                      : context.text.labelMedium!)
+                                  .copyWith(
+                                letterSpacing: dense ? 0.2 : null,
+                                color: isActive
+                                    ? palette.onAccent
+                                    : palette.textSecondary,
+                                fontWeight: isActive
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
+                              child: Text(
+                                labelOf(value),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ),

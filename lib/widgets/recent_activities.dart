@@ -100,7 +100,7 @@ class _ActivityCard extends StatelessWidget {
       child: InkWell(
         key: ValueKey<String>('activity-${activity.id}'),
         onTap: onTap,
-        borderRadius: AppRadius.rLg,
+        borderRadius: AppRadius.rMd,
         child: SectionCard(
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Column(

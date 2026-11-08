@@ -214,10 +214,16 @@ class _TrainingEquipmentScreenState extends State<TrainingEquipmentScreen> {
                     AppSpacing.xxl,
                   ),
                   children: <Widget>[
-                    Text('Equipment profiles', style: context.text.headlineSmall),
+                    Text(
+                      'Equipment profiles',
+                      style: context.text.headlineMedium,
+                    ),
                     const SizedBox(height: AppSpacing.xs),
-                    const Text(
+                    Text(
                       'Save the equipment you have at places like home or the gym. The exercise library uses your active profile to find a match.',
+                      style: context.text.bodyMedium?.copyWith(
+                        color: context.palette.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     if (_taxonomyError != null)
@@ -301,7 +307,19 @@ class _EquipmentProfileCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(profile.name, style: context.text.titleMedium),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: Text(profile.name, style: context.text.titleMedium),
+                ),
+                if (active)
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    color: context.palette.textPrimary,
+                  ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.xxs),
             Text(
               profile.equipmentIds.isEmpty
@@ -416,7 +434,7 @@ class _EquipmentProfileDialogState extends State<_EquipmentProfileDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        TextButton(
+        FilledButton(
           onPressed: _name.text.trim().isEmpty ? null : _done,
           child: const Text('Done'),
         ),

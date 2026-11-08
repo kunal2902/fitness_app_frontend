@@ -60,14 +60,18 @@ class MacroMeter extends StatelessWidget {
                     : '${_g(consumed)} g',
                 style: context.text.bodySmall?.copyWith(
                   // Values wear ink, never the series colour.
-                  color: isOver ? AppColors.warning : palette.textPrimary,
+                  color: isOver ? palette.warning : palette.textPrimary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.xxs),
         ],
-        _MeterTrack(ratio: ratio, tint: tint, track: palette.surfaceHigh),
+        _MeterTrack(
+          ratio: ratio,
+          tint: tint,
+          track: Color.lerp(palette.surface, palette.surfaceAlt, 0.55)!,
+        ),
       ],
     );
   }
@@ -78,9 +82,7 @@ class MacroMeter extends StatelessWidget {
     if (value >= 10 || value == value.roundToDouble()) {
       return value.round().toString();
     }
-    return value
-        .toStringAsFixed(1)
-        .replaceAll(RegExp(r'\.0$'), '');
+    return value.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
   }
 }
 

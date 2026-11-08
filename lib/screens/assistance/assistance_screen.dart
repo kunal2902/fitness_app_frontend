@@ -52,8 +52,8 @@ class _AssistanceView extends StatelessWidget {
                 color: palette.accent,
                 backgroundColor: palette.surfaceHigh,
                 onRefresh: () async {
-                  final ProfessionalsBloc bloc =
-                      context.read<ProfessionalsBloc>();
+                  final ProfessionalsBloc bloc = context
+                      .read<ProfessionalsBloc>();
                   bloc.add(const ProfessionalsRequested());
                   // firstWhere on a bloc's stream never completes if the
                   // bloc closes first — it throws StateError, or hangs the
@@ -78,9 +78,10 @@ class _AssistanceView extends StatelessWidget {
                   ),
                   children: <Widget>[
                     Text(
-                      'CONNECT WITH OUR',
-                      style: context.text.labelSmall
-                          ?.copyWith(color: palette.accent),
+                      'COACHING',
+                      style: context.text.labelSmall?.copyWith(
+                        color: palette.accent,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text('Professionals', style: context.text.displaySmall),
@@ -88,13 +89,14 @@ class _AssistanceView extends StatelessWidget {
                     Text(
                       'Message a coach, or start a voice or video call when '
                       'they are online.',
-                      style: context.text.bodyMedium
-                          ?.copyWith(color: palette.textSecondary),
+                      style: context.text.bodyMedium?.copyWith(
+                        color: palette.textSecondary,
+                      ),
                     ),
 
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.lg),
                     const _ConnectionBanner(),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.lg),
 
                     if (state.isLoading && state.professionals.isEmpty)
                       const _LoadingList()
@@ -144,9 +146,9 @@ class _ConnectionBanner extends StatelessWidget {
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            color: AppColors.warning.withValues(alpha: 0.12),
-            borderRadius: AppRadius.rSm,
-            border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+            color: palette.surface,
+            borderRadius: AppRadius.rMd,
+            border: Border.all(color: palette.border),
           ),
           child: Row(
             children: <Widget>[
@@ -154,15 +156,16 @@ class _ConnectionBanner extends StatelessWidget {
                 height: 16,
                 width: 16,
                 child: isConnecting
-                    ? const CircularProgressIndicator(
+                    ? CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppColors.warning),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          palette.warning,
+                        ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.cloud_off_rounded,
                         size: 16,
-                        color: AppColors.warning,
+                        color: palette.warning,
                       ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -171,7 +174,7 @@ class _ConnectionBanner extends StatelessWidget {
                   isConnecting
                       ? 'Connecting to live chat…'
                       : 'Offline — messages will send when you reconnect, and '
-                          'calls are unavailable.',
+                            'calls are unavailable.',
                   style: context.text.bodySmall?.copyWith(
                     color: palette.textSecondary,
                     fontSize: 12,
@@ -200,7 +203,7 @@ class _LoadingList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           decoration: BoxDecoration(
             color: palette.surface,
-            borderRadius: AppRadius.rLg,
+            borderRadius: AppRadius.rMd,
             border: Border.all(color: palette.border),
           ),
         ),
@@ -228,10 +231,11 @@ class _EmptyState extends StatelessWidget {
           Text('No coaches yet', style: context.text.titleMedium),
           const SizedBox(height: AppSpacing.xxs),
           Text(
-            'Run the seed script on the backend to add the team.',
+            'Check back when the coaching team is available.',
             textAlign: TextAlign.center,
-            style:
-                context.text.bodySmall?.copyWith(color: palette.textTertiary),
+            style: context.text.bodySmall?.copyWith(
+              color: palette.textTertiary,
+            ),
           ),
         ],
       ),
@@ -251,23 +255,20 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
         children: <Widget>[
-          const Icon(
-            Icons.error_outline_rounded,
-            size: 40,
-            color: AppColors.danger,
-          ),
+          Icon(Icons.error_outline_rounded, size: 40, color: palette.danger),
           const SizedBox(height: AppSpacing.md),
           Text(
             message,
             textAlign: TextAlign.center,
-            style:
-                context.text.bodyMedium?.copyWith(color: palette.textSecondary),
+            style: context.text.bodyMedium?.copyWith(
+              color: palette.textSecondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton(
-            onPressed: () => context
-                .read<ProfessionalsBloc>()
-                .add(const ProfessionalsRequested()),
+            onPressed: () => context.read<ProfessionalsBloc>().add(
+              const ProfessionalsRequested(),
+            ),
             child: const Text('Try again'),
           ),
         ],

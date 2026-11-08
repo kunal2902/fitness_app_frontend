@@ -38,8 +38,9 @@ class _ExerciseMuscleMapState extends State<ExerciseMuscleMap> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = context.palette.accent;
-    final secondaryColor = context.scheme.secondary;
+    final palette = context.palette;
+    final primaryColor = palette.accent;
+    final secondaryColor = palette.textTertiary;
     return SectionCard(
       title: 'Muscles worked',
       child: Column(
@@ -58,23 +59,33 @@ class _ExerciseMuscleMapState extends State<ExerciseMuscleMap> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Center(
-            child: Semantics(
-              image: true,
-              label: _back
-                  ? 'Back view of exercise targets'
-                  : 'Front view of exercise targets',
-              child: CustomPaint(
-                size: const Size(190, 290),
-                painter: _MusclePainter(
-                  back: _back,
-                  selectedId: _selectedId,
-                  primary: widget.primary.keys.toSet(),
-                  secondary: widget.secondary.keys.toSet(),
-                  primaryColor: primaryColor,
-                  secondaryColor: secondaryColor,
-                  figureColor: context.palette.surfaceHigh,
-                  outlineColor: context.palette.borderStrong,
-                  selectionColor: context.palette.textPrimary,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.surfaceAlt,
+                border: Border.all(color: palette.border),
+                borderRadius: AppRadius.rSm,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Semantics(
+                  image: true,
+                  label: _back
+                      ? 'Back view of exercise targets'
+                      : 'Front view of exercise targets',
+                  child: CustomPaint(
+                    size: const Size(190, 290),
+                    painter: _MusclePainter(
+                      back: _back,
+                      selectedId: _selectedId,
+                      primary: widget.primary.keys.toSet(),
+                      secondary: widget.secondary.keys.toSet(),
+                      primaryColor: primaryColor,
+                      secondaryColor: secondaryColor,
+                      figureColor: palette.surfaceHigh,
+                      outlineColor: palette.borderStrong,
+                      selectionColor: palette.onAccent,
+                    ),
+                  ),
                 ),
               ),
             ),

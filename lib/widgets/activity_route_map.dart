@@ -8,7 +8,12 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../config/app_config.dart';
 import '../models/route_map_geometry.dart';
 import '../models/route_models.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
+
+// The basemap belongs to the map provider and can be light or dark. Pair
+// the white route with a black casing on both so it stays readable.
+const String _mapInk = '#101010';
+const String _mapPaper = '#FFFFFF';
 
 /// Interactive route map for an activity detail or post-workout surface.
 ///
@@ -118,14 +123,14 @@ class _ActivityRouteMapState extends State<ActivityRouteMap> {
         await controller.addLines(<LineOptions>[
           LineOptions(
             geometry: route,
-            lineColor: '#050707',
+            lineColor: _mapInk,
             lineWidth: 9,
-            lineOpacity: 0.72,
+            lineOpacity: 0.94,
             lineJoin: 'round',
           ),
           LineOptions(
             geometry: route,
-            lineColor: '#C6FF3D',
+            lineColor: _mapPaper,
             lineWidth: 5,
             lineOpacity: 1,
             lineJoin: 'round',
@@ -138,24 +143,24 @@ class _ActivityRouteMapState extends State<ActivityRouteMap> {
           for (final RouteCoordinate split in geometry.splitCoordinates)
             CircleOptions(
               geometry: LatLng(split.latitude, split.longitude),
-              circleRadius: 5,
-              circleColor: '#0B0F0E',
+              circleRadius: 4,
+              circleColor: _mapInk,
               circleStrokeWidth: 2,
-              circleStrokeColor: '#C6FF3D',
+              circleStrokeColor: _mapPaper,
             ),
         CircleOptions(
           geometry: route.first,
           circleRadius: 7,
-          circleColor: '#C6FF3D',
+          circleColor: _mapInk,
           circleStrokeWidth: 3,
-          circleStrokeColor: '#050707',
+          circleStrokeColor: _mapPaper,
         ),
         CircleOptions(
           geometry: route.last,
           circleRadius: 7,
-          circleColor: '#F7F9F8',
+          circleColor: _mapPaper,
           circleStrokeWidth: 3,
-          circleStrokeColor: '#050707',
+          circleStrokeColor: _mapInk,
         ),
       ];
       await controller.addCircles(markers);
@@ -264,7 +269,7 @@ class _ActivityRouteMapState extends State<ActivityRouteMap> {
       image: true,
       label: semantics,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.rMd,
         child: SizedBox(
           height: widget.height,
           child: Stack(
@@ -294,10 +299,10 @@ class _ActivityRouteMapState extends State<ActivityRouteMap> {
                 ],
               ),
               if (!_styleReady)
-                const IgnorePointer(
+                IgnorePointer(
                   child: ColoredBox(
-                    color: AppColors.darkSurface,
-                    child: Center(child: CircularProgressIndicator()),
+                    color: context.palette.surfaceAlt,
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
                 ),
             ],
@@ -325,6 +330,31 @@ class ActivityRouteThumbnail extends StatelessWidget {
   final List<RouteSplit> splits;
   final double height;
 
+  // Stored previews can outlive a theme change. Keep the contrast and
+  // existing markers of the original image while neutralizing its tint.
+  static const ColorFilter _monochrome = ColorFilter.matrix(<double>[
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+  ]);
+
   @override
   Widget build(BuildContext context) {
     RouteMapGeometry? geometry;
@@ -343,7 +373,7 @@ class ActivityRouteThumbnail extends StatelessWidget {
     final String? resolved = AppConfig.resolveMediaUrl(thumbnailUrl);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadius.rSm,
       child: SizedBox(
         height: height,
         child: resolved == null
@@ -354,7 +384,12 @@ class ActivityRouteThumbnail extends StatelessWidget {
                 semanticLabel: 'Activity route preview',
                 errorBuilder: (_, __, ___) => fallback,
                 frameBuilder: (context, child, frame, synchronous) {
-                  if (synchronous || frame != null) return child;
+                  if (synchronous || frame != null) {
+                    return ColorFiltered(
+                      colorFilter: _monochrome,
+                      child: child,
+                    );
+                  }
                   return Stack(
                     fit: StackFit.expand,
                     children: <Widget>[
@@ -377,9 +412,9 @@ class RouteShapePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: AppRadius.rMd,
       child: CustomPaint(
-        painter: _RouteShapePainter(geometry),
+        painter: _RouteShapePainter(geometry, context.palette),
         child: const SizedBox.expand(),
       ),
     );
@@ -387,18 +422,19 @@ class RouteShapePreview extends StatelessWidget {
 }
 
 class _RouteShapePainter extends CustomPainter {
-  const _RouteShapePainter(this.geometry);
+  const _RouteShapePainter(this.geometry, this.palette);
 
   final RouteMapGeometry geometry;
+  final AppPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = const Color(0xFF0B0F0E),
+      Paint()..color = palette.surfaceAlt,
     );
     final Paint grid = Paint()
-      ..color = const Color(0xFF1C2421)
+      ..color = palette.border
       ..strokeWidth = 1;
     for (double x = 24; x < size.width; x += 56) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
@@ -419,7 +455,7 @@ class _RouteShapePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xCC020404)
+        ..color = palette.surface
         ..style = PaintingStyle.stroke
         ..strokeWidth = 9
         ..strokeCap = StrokeCap.round
@@ -428,7 +464,7 @@ class _RouteShapePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = AppColors.volt
+        ..color = palette.accent
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4
         ..strokeCap = StrokeCap.round
@@ -437,28 +473,34 @@ class _RouteShapePainter extends CustomPainter {
 
     for (final RouteCoordinate split in geometry.splitCoordinates) {
       final Offset point = projection.project(split);
-      canvas.drawCircle(point, 5, Paint()..color = const Color(0xFF0B0F0E));
+      canvas.drawCircle(point, 5, Paint()..color = palette.surfaceAlt);
       canvas.drawCircle(
         point,
         5,
         Paint()
-          ..color = AppColors.volt
+          ..color = palette.accent
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2,
       );
     }
-    _marker(canvas, route.first, AppColors.volt);
-    _marker(canvas, route.last, const Color(0xFFF7F9F8));
-  }
-
-  void _marker(Canvas canvas, Offset point, Color colour) {
-    canvas.drawCircle(point, 9, Paint()..color = const Color(0xCC020404));
-    canvas.drawCircle(point, 6, Paint()..color = colour);
+    canvas.drawCircle(route.first, 8, Paint()..color = palette.accent);
+    canvas.drawCircle(route.first, 5, Paint()..color = palette.surfaceAlt);
+    if (route.first != route.last) {
+      final Rect finish = Rect.fromCenter(
+        center: route.last,
+        width: 13,
+        height: 13,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(finish, const Radius.circular(3)),
+        Paint()..color = palette.accent,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(covariant _RouteShapePainter oldDelegate) =>
-      oldDelegate.geometry != geometry;
+      oldDelegate.geometry != geometry || oldDelegate.palette != palette;
 }
 
 class _CanvasProjection {
@@ -538,20 +580,21 @@ class _OfflineNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppPalette palette = context.palette;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.darkSurface.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.darkBorder),
+        color: palette.surface,
+        borderRadius: AppRadius.rSm,
+        border: Border.all(color: palette.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 12),
+        padding: const EdgeInsets.only(left: AppSpacing.sm),
         child: Row(
           children: <Widget>[
-            const Expanded(
+            Expanded(
               child: Text(
                 'Map offline — route still available',
-                style: TextStyle(color: AppColors.darkTextPrimary),
+                style: context.text.bodySmall,
               ),
             ),
             TextButton(onPressed: onRetry, child: const Text('Retry')),
@@ -575,22 +618,24 @@ class _RouteMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppPalette palette = context.palette;
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.darkBorder),
+        color: palette.surfaceAlt,
+        borderRadius: AppRadius.rMd,
+        border: Border.all(color: palette.border),
       ),
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, color: AppColors.darkTextSecondary),
-          const SizedBox(height: 8),
+          Icon(icon, color: palette.textSecondary),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             message,
-            style: const TextStyle(color: AppColors.darkTextSecondary),
+            style:
+                context.text.bodySmall?.copyWith(color: palette.textSecondary),
           ),
         ],
       ),

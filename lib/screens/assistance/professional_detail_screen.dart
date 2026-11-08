@@ -106,10 +106,7 @@ class _DetailViewState extends State<_DetailView> {
       return;
     }
     if (!SocketService.instance.isConnected) {
-      AppSnackbar.error(
-        context,
-        'You are offline. Reconnect to start a call.',
-      );
+      AppSnackbar.error(context, 'You are offline. Reconnect to start a call.');
       return;
     }
     if (!professional.isAcceptingClients) {
@@ -121,16 +118,16 @@ class _DetailViewState extends State<_DetailView> {
     }
 
     context.read<CallBloc>().add(
-          CallDialRequested(
-            conversationId: conversationId,
-            peer: CallPeer(
-              userId: professional.userId,
-              name: professional.displayName,
-              avatarUrl: professional.avatarUrl,
-            ),
-            withVideo: withVideo,
-          ),
-        );
+      CallDialRequested(
+        conversationId: conversationId,
+        peer: CallPeer(
+          userId: professional.userId,
+          name: professional.displayName,
+          avatarUrl: professional.avatarUrl,
+        ),
+        withVideo: withVideo,
+      ),
+    );
   }
 
   @override
@@ -191,9 +188,8 @@ class _DetailViewState extends State<_DetailView> {
                           count: professional.certifications.length,
                         ),
                         ...professional.certifications.map(
-                          (Certification c) => CertificationTile(
-                            certification: c,
-                          ),
+                          (Certification c) =>
+                              CertificationTile(certification: c),
                         ),
                       ],
 
@@ -205,9 +201,8 @@ class _DetailViewState extends State<_DetailView> {
                           count: professional.transformations.length,
                         ),
                         ...professional.transformations.map(
-                          (ClientTransformation t) => TransformationCard(
-                            transformation: t,
-                          ),
+                          (ClientTransformation t) =>
+                              TransformationCard(transformation: t),
                         ),
                       ],
 
@@ -243,11 +238,12 @@ class _DetailViewState extends State<_DetailView> {
                       // will send. Offer the retry instead.
                       else if (chat.conversationId == null)
                         _ChatUnavailable(
-                          message: chat.errorMessage ??
+                          message:
+                              chat.errorMessage ??
                               'Could not open this conversation.',
-                          onRetry: () => context
-                              .read<ChatBloc>()
-                              .add(const ChatOpenRetried()),
+                          onRetry: () => context.read<ChatBloc>().add(
+                            const ChatOpenRetried(),
+                          ),
                         )
                       else ...<Widget>[
                         if (chat.hasMore)
@@ -255,9 +251,9 @@ class _DetailViewState extends State<_DetailView> {
                             child: TextButton.icon(
                               onPressed: chat.isLoadingMore
                                   ? null
-                                  : () => context
-                                      .read<ChatBloc>()
-                                      .add(const ChatHistoryRequested()),
+                                  : () => context.read<ChatBloc>().add(
+                                      const ChatHistoryRequested(),
+                                    ),
                               icon: chat.isLoadingMore
                                   ? const SizedBox(
                                       height: 14,
@@ -311,12 +307,14 @@ class _DetailViewState extends State<_DetailView> {
 
     for (int i = 0; i < chat.messages.length; i++) {
       final ChatMessage message = chat.messages[i];
-      final ChatMessage? next =
-          i + 1 < chat.messages.length ? chat.messages[i + 1] : null;
+      final ChatMessage? next = i + 1 < chat.messages.length
+          ? chat.messages[i + 1]
+          : null;
 
       // The tail — pointed corner plus timestamp — goes on the last
       // message of each run, so a burst reads as one block.
-      final bool showTail = next == null ||
+      final bool showTail =
+          next == null ||
           next.senderId != message.senderId ||
           next.kind != message.kind ||
           next.createdAt.difference(message.createdAt).inMinutes >= 2;
@@ -329,9 +327,9 @@ class _DetailViewState extends State<_DetailView> {
           showTail: showTail,
           onRetry: message.clientId == null
               ? null
-              : () => context
-                  .read<ChatBloc>()
-                  .add(ChatMessageRetried(message.clientId!)),
+              : () => context.read<ChatBloc>().add(
+                  ChatMessageRetried(message.clientId!),
+                ),
         ),
       );
     }
@@ -378,16 +376,14 @@ class _DetailAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ClipOval(
                   child: avatar == null
                       ? Container(
-                          decoration: const BoxDecoration(
-                            gradient: AppColors.voltGradient,
-                          ),
+                          color: palette.surfaceHigh,
                           alignment: Alignment.center,
                           child: Text(
                             professional.initials,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.onVolt,
+                              color: palette.textPrimary,
                             ),
                           ),
                         )
@@ -395,9 +391,8 @@ class _DetailAppBar extends StatelessWidget implements PreferredSizeWidget {
                           avatar,
                           fit: BoxFit.cover,
                           cacheWidth: 120,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: palette.surfaceAlt,
-                          ),
+                          errorBuilder: (_, __, ___) =>
+                              Container(color: palette.surfaceAlt),
                         ),
                 ),
                 Positioned(
@@ -512,7 +507,7 @@ class _AboutSection extends StatelessWidget {
                   ? 'No ratings'
                   : '${professional.ratingCount} ratings',
               icon: Icons.star_rounded,
-              tint: AppColors.warning,
+              tint: palette.textPrimary,
             ),
             _Stat(
               value: '${professional.yearsExperience}',
@@ -535,8 +530,10 @@ class _AboutSection extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         Text(
           professional.bio,
-          style: context.text.bodyMedium
-              ?.copyWith(color: palette.textSecondary, height: 1.6),
+          style: context.text.bodyMedium?.copyWith(
+            color: palette.textSecondary,
+            height: 1.6,
+          ),
         ),
 
         if (professional.specialities.isNotEmpty) ...<Widget>[
@@ -553,7 +550,7 @@ class _AboutSection extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: palette.surfaceAlt,
-                      borderRadius: AppRadius.rPill,
+                      borderRadius: AppRadius.rSm,
                       border: Border.all(color: palette.border),
                     ),
                     child: Row(
@@ -563,8 +560,9 @@ class _AboutSection extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           s.label,
-                          style: context.text.bodySmall
-                              ?.copyWith(color: palette.textPrimary),
+                          style: context.text.bodySmall?.copyWith(
+                            color: palette.textPrimary,
+                          ),
                         ),
                       ],
                     ),
@@ -587,8 +585,9 @@ class _AboutSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   professional.languages.join(' · '),
-                  style: context.text.bodySmall
-                      ?.copyWith(color: palette.textTertiary),
+                  style: context.text.bodySmall?.copyWith(
+                    color: palette.textTertiary,
+                  ),
                 ),
               ),
             ],
@@ -631,8 +630,10 @@ class _Stat extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.text.bodySmall
-                ?.copyWith(color: palette.textTertiary, fontSize: 11),
+            style: context.text.bodySmall?.copyWith(
+              color: palette.textTertiary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -663,19 +664,17 @@ class _ChatUnavailable extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          const Icon(
-            Icons.cloud_off_rounded,
-            size: 28,
-            color: AppColors.warning,
-          ),
+          Icon(Icons.cloud_off_rounded, size: 28, color: palette.warning),
           const SizedBox(height: AppSpacing.sm),
           Text('Chat unavailable', style: context.text.titleSmall),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: context.text.bodySmall
-                ?.copyWith(color: palette.textTertiary, height: 1.5),
+            style: context.text.bodySmall?.copyWith(
+              color: palette.textTertiary,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(
@@ -707,11 +706,7 @@ class _ChatEmptyState extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          Icon(
-            Icons.waving_hand_rounded,
-            size: 28,
-            color: palette.accent,
-          ),
+          Icon(Icons.waving_hand_rounded, size: 28, color: palette.accent),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Say hello to ${professional.firstName}',
@@ -722,8 +717,10 @@ class _ChatEmptyState extends StatelessWidget {
             'Ask about their approach, your goals, or book a call. '
             'Replies usually come within a few hours.',
             textAlign: TextAlign.center,
-            style: context.text.bodySmall
-                ?.copyWith(color: palette.textTertiary, height: 1.5),
+            style: context.text.bodySmall?.copyWith(
+              color: palette.textTertiary,
+              height: 1.5,
+            ),
           ),
         ],
       ),

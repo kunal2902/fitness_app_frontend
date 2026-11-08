@@ -90,7 +90,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
         },
         child: Scaffold(
           backgroundColor: context.palette.bg,
-          body: IndexedStack(index: _index, children: _tabs),
+          body: IndexedStack(
+            index: _index,
+            children: <Widget>[
+              // IndexedStack keeps every tab mounted, which is what makes
+              // switching instant — and also means an animation or a video
+              // loop on a tab nobody is looking at keeps running. TickerMode
+              // is how a child learns it is off screen; `MontageBackground`
+              // reads it to stop decoding.
+              for (int i = 0; i < _tabs.length; i++)
+                TickerMode(enabled: _index == i, child: _tabs[i]),
+            ],
+          ),
           bottomNavigationBar: AppBottomNav(
             destinations: _destinations,
             currentIndex: _index,

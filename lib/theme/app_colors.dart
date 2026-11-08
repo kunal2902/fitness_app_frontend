@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Central colour palette for the app.
 ///
-/// The palette is dark-first (the product is an athletic / performance app,
-/// which reads best on a near-black canvas) but every semantic token has a
-/// light counterpart so `AppTheme.light` stays fully usable.
-///
-/// Never hard-code a hex value in a widget — add a semantic token here.
+/// Neutral interface surfaces with dedicated colors for feedback and data.
+/// Read [AppPalette] for values that adapt to the current appearance.
 class AppColors {
   const AppColors._();
 
@@ -14,23 +11,19 @@ class AppColors {
   // Brand
   // ---------------------------------------------------------------------
 
-  /// Primary brand accent — "volt". High-energy, reads as athletic.
-  /// Always pair with [onVolt] for text sitting on top of it.
-  static const Color volt = Color(0xFFC6FF3D);
-  static const Color voltDim = Color(0xFFA6DC22);
-  static const Color voltBright = Color(0xFFDFFF6B);
+  // Fixed fills for older marks and artwork. Controls use palette.accent so
+  // their foreground and background invert together in light mode.
+  static const Color volt = Colors.white;
+  static const Color voltDim = Color(0xFFE0E0E0);
+  static const Color voltBright = Colors.white;
+  static const Color voltDeep = Color(0xFF121212);
+  static const Color onVolt = Color(0xFF121212);
 
-  /// Volt is too light for text on a white background — use this instead.
-  static const Color voltDeep = Color(0xFF6E9B0A);
-
-  /// Text/icon colour that sits on top of [volt].
-  static const Color onVolt = Color(0xFF0A0F03);
-
-  /// Secondary accent — used for links, informational states, charts.
+  /// Fixed blue for informational indicators and charts.
   static const Color electric = Color(0xFF4C7DFF);
   static const Color electricDim = Color(0xFF3A63D6);
 
-  /// Warm accent — streaks, energy, "personal best" moments.
+  /// Energy and streak data.
   static const Color ember = Color(0xFFFF6B2C);
   static const Color emberDim = Color(0xFFFF4D2E);
 
@@ -42,34 +35,40 @@ class AppColors {
   static const Color warning = Color(0xFFFFB020);
   static const Color danger = Color(0xFFFF4D4F);
   static const Color info = electric;
+  static const Color darkDanger = Color(0xFFFF7B80);
+  static const Color darkInfo = Color(0xFF91B0FF);
+  static const Color lightSuccess = Color(0xFF14603B);
+  static const Color lightWarning = Color(0xFF795000);
+  static const Color lightDanger = Color(0xFFA81E2A);
+  static const Color lightInfo = Color(0xFF2D55AE);
 
   // ---------------------------------------------------------------------
   // Dark neutrals (default experience)
   // ---------------------------------------------------------------------
 
-  static const Color darkBg = Color(0xFF07090D);
-  static const Color darkSurface = Color(0xFF10141C);
-  static const Color darkSurfaceAlt = Color(0xFF171C26);
-  static const Color darkSurfaceHigh = Color(0xFF1F2632);
-  static const Color darkBorder = Color(0xFF2A3140);
-  static const Color darkBorderStrong = Color(0xFF3A4353);
-  static const Color darkTextPrimary = Color(0xFFF4F7FB);
-  static const Color darkTextSecondary = Color(0xFF9AA4B8);
-  static const Color darkTextTertiary = Color(0xFF6B7488);
+  static const Color darkBg = Color(0xFF090909);
+  static const Color darkSurface = Color(0xFF141414);
+  static const Color darkSurfaceAlt = Color(0xFF1B1B1B);
+  static const Color darkSurfaceHigh = Color(0xFF252525);
+  static const Color darkBorder = Color(0xFF303030);
+  static const Color darkBorderStrong = Color(0xFF767676);
+  static const Color darkTextPrimary = Color(0xFFFAFAFA);
+  static const Color darkTextSecondary = Color(0xFFC2C2C2);
+  static const Color darkTextTertiary = Color(0xFFA0A0A0);
 
   // ---------------------------------------------------------------------
   // Light neutrals
   // ---------------------------------------------------------------------
 
-  static const Color lightBg = Color(0xFFFFFFFF);
-  static const Color lightSurface = Color(0xFFF6F8FB);
-  static const Color lightSurfaceAlt = Color(0xFFEEF2F7);
-  static const Color lightSurfaceHigh = Color(0xFFFFFFFF);
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  static const Color lightBorderStrong = Color(0xFFCBD5E1);
-  static const Color lightTextPrimary = Color(0xFF0B1220);
-  static const Color lightTextSecondary = Color(0xFF5A6478);
-  static const Color lightTextTertiary = Color(0xFF8A94A6);
+  static const Color lightBg = Color(0xFFFAFAFA);
+  static const Color lightSurface = Colors.white;
+  static const Color lightSurfaceAlt = Color(0xFFF2F2F2);
+  static const Color lightSurfaceHigh = Color(0xFFE8E8E8);
+  static const Color lightBorder = Color(0xFFD9D9D9);
+  static const Color lightBorderStrong = Color(0xFF777777);
+  static const Color lightTextPrimary = Color(0xFF121212);
+  static const Color lightTextSecondary = Color(0xFF454545);
+  static const Color lightTextTertiary = Color(0xFF595959);
 
   // ---------------------------------------------------------------------
   // Gradients
@@ -78,7 +77,7 @@ class AppColors {
   static const LinearGradient voltGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: <Color>[voltBright, voltDim],
+    colors: <Color>[volt, volt],
   );
 
   static const LinearGradient emberGradient = LinearGradient(
@@ -90,12 +89,12 @@ class AppColors {
   static const LinearGradient darkCardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: <Color>[darkSurfaceHigh, darkSurface],
+    colors: <Color>[darkSurface, darkSurface],
   );
 
-  /// Soft glow placed behind hero elements on onboarding screens.
+  /// Neutral treatment for legacy decorative artwork.
   static const RadialGradient voltGlow = RadialGradient(
-    colors: <Color>[Color(0x33C6FF3D), Color(0x00C6FF3D)],
+    colors: <Color>[Color(0x12FFFFFF), Color(0x00FFFFFF)],
   );
 }
 
@@ -118,6 +117,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.accent,
     required this.onAccent,
     required this.cardGradient,
+    this.success = AppColors.success,
+    this.warning = AppColors.warning,
+    this.danger = AppColors.darkDanger,
+    this.info = AppColors.darkInfo,
   });
 
   final Color bg;
@@ -132,6 +135,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color accent;
   final Color onAccent;
   final LinearGradient cardGradient;
+  final Color success;
+  final Color warning;
+  final Color danger;
+  final Color info;
 
   static const AppPalette dark = AppPalette(
     bg: AppColors.darkBg,
@@ -158,13 +165,17 @@ class AppPalette extends ThemeExtension<AppPalette> {
     textPrimary: AppColors.lightTextPrimary,
     textSecondary: AppColors.lightTextSecondary,
     textTertiary: AppColors.lightTextTertiary,
-    accent: AppColors.voltDeep,
+    accent: AppColors.lightTextPrimary,
     onAccent: Colors.white,
-    cardGradient: const LinearGradient(
+    cardGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: <Color>[AppColors.lightSurfaceHigh, AppColors.lightSurface],
+      colors: <Color>[AppColors.lightSurface, AppColors.lightSurface],
     ),
+    success: AppColors.lightSuccess,
+    warning: AppColors.lightWarning,
+    danger: AppColors.lightDanger,
+    info: AppColors.lightInfo,
   );
 
   @override
@@ -181,6 +192,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? accent,
     Color? onAccent,
     LinearGradient? cardGradient,
+    Color? success,
+    Color? warning,
+    Color? danger,
+    Color? info,
   }) {
     return AppPalette(
       bg: bg ?? this.bg,
@@ -195,6 +210,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
       accent: accent ?? this.accent,
       onAccent: onAccent ?? this.onAccent,
       cardGradient: cardGradient ?? this.cardGradient,
+      success: success ?? this.success,
+      warning: warning ?? this.warning,
+      danger: danger ?? this.danger,
+      info: info ?? this.info,
     );
   }
 
@@ -213,9 +232,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       onAccent: Color.lerp(onAccent, other.onAccent, t)!,
-      cardGradient:
-          LinearGradient.lerp(cardGradient, other.cardGradient, t) ??
-              cardGradient,
+      cardGradient: LinearGradient.lerp(cardGradient, other.cardGradient, t) ??
+          cardGradient,
+      success: Color.lerp(success, other.success, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+      info: Color.lerp(info, other.info, t)!,
     );
   }
 }

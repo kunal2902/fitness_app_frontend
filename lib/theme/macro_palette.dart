@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/nutrition_models.dart';
-import 'app_colors.dart';
 
 /// The three macronutrient series colours.
 ///
@@ -9,17 +8,14 @@ import 'app_colors.dart';
 /// fixed categorical order that is never cycled or reassigned — the colour
 /// follows the nutrient, never its size or its rank in a sorted list.
 ///
-/// These are deliberately NOT the interface accent. `palette.accent` is
-/// volt, and reusing it for a data series would make "the brand colour" and
-/// "protein" the same thing — so a protein bar next to a primary button
-/// would read as related when it is not. Same reasoning that keeps
-/// `AppColors.success`/`warning`/`danger` reserved for state.
+/// Fixed data colors keep each nutrient recognizable across both interface
+/// appearances. The meter also shows a label and grams for every nutrient.
 ///
 /// The specific steps were not chosen by eye. The triad was run through the
 /// palette validator against both surfaces and passes every check:
 ///
 /// ```
-/// #6E9B0A, #3A63D6, #FF4D2E   (voltDeep, electricDim, emberDim)
+/// #6E9B0A, #3A63D6, #FF4D2E
 ///   lightness band     inside L 0.48–0.67 dark / 0.43–0.77 light
 ///   chroma floor       all >= 0.10
 ///   CVD separation     worst adjacent ΔE 27.1 protan, 11.5 tritan
@@ -27,17 +23,14 @@ import 'app_colors.dart';
 ///   contrast           all >= 3:1 on both surfaces
 /// ```
 ///
-/// The brighter `volt` / `electric` / `ember` steps fail the lightness
-/// band — volt sits at L 0.93, so a protein bar would visually dominate a
-/// carbs bar of the same length. If you restyle these, re-run the
-/// validator rather than picking by taste; the band is what stops one
-/// nutrient shouting over the others.
+/// Keep the lightness band when updating these values so equal lengths
+/// have similar visual weight.
 class MacroPalette {
   const MacroPalette._();
 
-  static const Color protein = AppColors.voltDeep;
-  static const Color carbs = AppColors.electricDim;
-  static const Color fat = AppColors.emberDim;
+  static const Color protein = Color(0xFF6E9B0A);
+  static const Color carbs = Color(0xFF3A63D6);
+  static const Color fat = Color(0xFFFF4D2E);
 
   /// Fixed order. Iterate this, never `Map.values` on an unordered map.
   static const List<MacroKind> order = <MacroKind>[

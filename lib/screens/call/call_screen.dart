@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -26,93 +27,129 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AppPalette palette = context.palette;
-
     return BlocBuilder<CallBloc, CallState>(
       builder: (BuildContext context, CallState state) {
         final CallBloc bloc = context.read<CallBloc>();
-        final bool showRemoteVideo = state.withVideo &&
+        final bool showRemoteVideo =
+            state.withVideo &&
             state.hasRemoteVideo &&
             state.phase == CallPhase.connected;
 
-        return Scaffold(
-          backgroundColor: AppColors.darkBg,
-          body: GestureDetector(
-            // Tap anywhere to bring the controls back.
-            onTap: () => setState(() => _controlsVisible = !_controlsVisible),
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                // ---- Remote video, or the peer's identity ----------------
-                if (showRemoteVideo)
-                  RTCVideoView(
-                    bloc.remoteRenderer,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  )
-                else
-                  _PeerBackdrop(state: state),
+        final SystemUiOverlayStyle overlay =
+            (showRemoteVideo
+                    ? AppTheme.dark.appBarTheme
+                    : context.theme.appBarTheme)
+                .systemOverlayStyle ??
+            SystemUiOverlayStyle.light;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: overlay,
+          child: Scaffold(
+            backgroundColor: showRemoteVideo
+                ? AppColors.darkBg
+                : context.palette.bg,
+            body: GestureDetector(
+              // Tap anywhere to bring the controls back.
+              onTap: () => setState(() => _controlsVisible = !_controlsVisible),
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  // ---- Remote video, or the peer's identity ----------------
+                  if (showRemoteVideo)
+                    RTCVideoView(
+                      bloc.remoteRenderer,
+                      objectFit:
+                          RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                    )
+                  else
+                    _PeerBackdrop(state: state),
 
-                // ---- Local preview --------------------------------------
-                if (state.withVideo && state.isCameraEnabled)
-                  _LocalPreview(
-                    renderer: bloc.localRenderer,
-                    alignment: _pipAlignment,
-                    mirror: state.isFrontCamera,
-                    onMoved: (Alignment alignment) =>
-                        setState(() => _pipAlignment = alignment),
-                  ),
-
-                // ---- Top bar --------------------------------------------
-                AnimatedOpacity(
-                  duration: AppDuration.normal,
-                  opacity: _controlsVisible || !showRemoteVideo ? 1 : 0,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          if (showRemoteVideo) ...<Widget>[
-                            Text(
-                              state.peer?.name ?? 'Call',
-                              style: context.text.titleLarge
-                                  ?.copyWith(color: Colors.white),
+                  if (showRemoteVideo)
+                    const Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: 150,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: <Color>[
+                                Colors.black54,
+                                Colors.transparent,
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              state.statusLabel,
-                              style: context.text.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // ---- Local preview --------------------------------------
+                  if (state.withVideo && state.isCameraEnabled)
+                    _LocalPreview(
+                      renderer: bloc.localRenderer,
+                      alignment: _pipAlignment,
+                      mirror: state.isFrontCamera,
+                      onMoved: (Alignment alignment) =>
+                          setState(() => _pipAlignment = alignment),
+                    ),
+
+                  // ---- Top bar --------------------------------------------
+                  AnimatedOpacity(
+                    duration: AppDuration.normal,
+                    opacity: _controlsVisible || !showRemoteVideo ? 1 : 0,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: <Widget>[
+                            if (showRemoteVideo) ...<Widget>[
+                              Text(
+                                state.peer?.name ?? 'Call',
+                                style: context.text.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 2),
+                              Text(
+                                state.statusLabel,
+                                style: context.text.bodySmall?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                ),
+                              ),
+                            ],
+                            if (!state.turnAvailable &&
+                                state.phase == CallPhase.connecting)
+                              const _TurnWarning(),
                           ],
-                          if (!state.turnAvailable &&
-                              state.phase == CallPhase.connecting)
-                            const _TurnWarning(),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // ---- Controls -------------------------------------------
-                AnimatedPositioned(
-                  duration: AppDuration.normal,
-                  curve: Curves.easeOut,
-                  left: 0,
-                  right: 0,
-                  bottom: _controlsVisible || !showRemoteVideo ? 0 : -180,
-                  child: _CallControls(
-                    state: state,
-                    onToggleMic: () => bloc.add(const CallMicToggled()),
-                    onToggleCamera: () => bloc.add(const CallCameraToggled()),
-                    onToggleSpeaker: () => bloc.add(const CallSpeakerToggled()),
-                    onSwitchCamera: () => bloc.add(const CallCameraSwitched()),
-                    onHangUp: () => bloc.add(const CallHangUpRequested()),
+                  // ---- Controls -------------------------------------------
+                  AnimatedPositioned(
+                    duration: AppDuration.normal,
+                    curve: Curves.easeOut,
+                    left: 0,
+                    right: 0,
+                    bottom: _controlsVisible || !showRemoteVideo ? 0 : -180,
+                    child: _CallControls(
+                      state: state,
+                      overVideo: showRemoteVideo,
+                      onToggleMic: () => bloc.add(const CallMicToggled()),
+                      onToggleCamera: () => bloc.add(const CallCameraToggled()),
+                      onToggleSpeaker: () =>
+                          bloc.add(const CallSpeakerToggled()),
+                      onSwitchCamera: () =>
+                          bloc.add(const CallCameraSwitched()),
+                      onHangUp: () => bloc.add(const CallHangUpRequested()),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -133,16 +170,7 @@ class _PeerBackdrop extends StatelessWidget {
     final CallPeer? peer = state.peer;
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: <Color>[
-            AppColors.darkSurfaceHigh,
-            AppColors.darkBg,
-          ],
-        ),
-      ),
+      color: context.palette.bg,
       child: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -152,20 +180,24 @@ class _PeerBackdrop extends StatelessWidget {
               initials: peer?.initials ?? '?',
               // Only pulse while waiting — a pulse during a connected call
               // reads as a problem.
-              animate: state.phase == CallPhase.dialling ||
+              animate:
+                  state.phase == CallPhase.dialling ||
                   state.phase == CallPhase.connecting ||
                   state.phase == CallPhase.reconnecting,
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               peer?.name ?? 'Call',
-              style: context.text.headlineMedium?.copyWith(color: Colors.white),
+              style: context.text.headlineMedium,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               state.statusLabel,
               style: context.text.bodyLarge?.copyWith(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: context.palette.textSecondary,
               ),
             ),
             if (state.errorMessage != null) ...<Widget>[
@@ -175,8 +207,9 @@ class _PeerBackdrop extends StatelessWidget {
                 child: Text(
                   state.errorMessage!,
                   textAlign: TextAlign.center,
-                  style: context.text.bodySmall
-                      ?.copyWith(color: AppColors.warning),
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.palette.warning,
+                  ),
                 ),
               ),
             ],
@@ -245,17 +278,18 @@ class _PulsingAvatarState extends State<_PulsingAvatar>
               Container(
                 height: 116,
                 width: 116,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: AppColors.voltGradient,
+                  color: context.palette.surface,
+                  border: Border.all(color: context.palette.borderStrong),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   widget.initials,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 42,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.onVolt,
+                    color: context.palette.textPrimary,
                   ),
                 ),
               ),
@@ -281,7 +315,7 @@ class _Ring extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppColors.volt.withValues(alpha: (1 - progress) * 0.4),
+          color: context.palette.accent.withValues(alpha: (1 - progress) * 0.4),
           width: 2,
         ),
       ),
@@ -313,10 +347,14 @@ class _LocalPreview extends StatelessWidget {
             final Size size = MediaQuery.sizeOf(context);
             onMoved(
               Alignment(
-                (alignment.x + details.delta.dx / (size.width / 2))
-                    .clamp(-0.92, 0.92),
-                (alignment.y + details.delta.dy / (size.height / 2))
-                    .clamp(-0.82, 0.68),
+                (alignment.x + details.delta.dx / (size.width / 2)).clamp(
+                  -0.92,
+                  0.92,
+                ),
+                (alignment.y + details.delta.dy / (size.height / 2)).clamp(
+                  -0.82,
+                  0.68,
+                ),
               ),
             );
           },
@@ -355,6 +393,7 @@ class _LocalPreview extends StatelessWidget {
 class _CallControls extends StatelessWidget {
   const _CallControls({
     required this.state,
+    required this.overVideo,
     required this.onToggleMic,
     required this.onToggleCamera,
     required this.onToggleSpeaker,
@@ -363,6 +402,7 @@ class _CallControls extends StatelessWidget {
   });
 
   final CallState state;
+  final bool overVideo;
   final VoidCallback onToggleMic;
   final VoidCallback onToggleCamera;
   final VoidCallback onToggleSpeaker;
@@ -371,18 +411,23 @@ class _CallControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final Widget panel = Container(
       padding: const EdgeInsets.only(top: AppSpacing.xxl),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: <Color>[
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.72),
-          ],
-        ),
-      ),
+      decoration: overVideo
+          ? BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.72),
+                ],
+              ),
+            )
+          : BoxDecoration(
+              color: context.palette.surface,
+              border: Border(top: BorderSide(color: context.palette.border)),
+            ),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -439,6 +484,7 @@ class _CallControls extends StatelessWidget {
         ),
       ),
     );
+    return overVideo ? Theme(data: AppTheme.dark, child: panel) : panel;
   }
 }
 
@@ -461,12 +507,13 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppPalette palette = context.palette;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Material(
-          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.16),
-          shape: const CircleBorder(),
+          color: isActive ? palette.accent : palette.surfaceAlt,
+          shape: CircleBorder(side: BorderSide(color: palette.borderStrong)),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onPressed,
@@ -476,7 +523,7 @@ class _ControlButton extends StatelessWidget {
               child: Icon(
                 icon,
                 size: AppSize.iconLg,
-                color: isActive ? AppColors.darkBg : Colors.white,
+                color: isActive ? palette.onAccent : palette.textPrimary,
               ),
             ),
           ),
@@ -485,7 +532,7 @@ class _ControlButton extends StatelessWidget {
         Text(
           label,
           style: context.text.labelSmall?.copyWith(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: palette.textSecondary,
             fontSize: 10,
             letterSpacing: 0.2,
           ),
@@ -503,17 +550,17 @@ class _HangUpButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.danger,
+      color: context.scheme.error,
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onPressed,
-        child: const SizedBox(
+        child: SizedBox(
           height: 62,
           width: 148,
           child: Icon(
             Icons.call_end_rounded,
-            color: Colors.white,
+            color: context.scheme.onError,
             size: 30,
           ),
         ),
@@ -527,6 +574,7 @@ class _TurnWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppPalette palette = context.palette;
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.md),
       child: Container(
@@ -535,15 +583,18 @@ class _TurnWarning extends StatelessWidget {
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: AppColors.warning.withValues(alpha: 0.16),
+          color: palette.surface,
           borderRadius: AppRadius.rSm,
+          border: Border.all(color: palette.border),
         ),
         child: Text(
           'No TURN relay configured — this call may not connect on some '
           'networks.',
           textAlign: TextAlign.center,
-          style: context.text.bodySmall
-              ?.copyWith(color: AppColors.warning, fontSize: 11),
+          style: context.text.bodySmall?.copyWith(
+            color: palette.warning,
+            fontSize: 11,
+          ),
         ),
       ),
     );

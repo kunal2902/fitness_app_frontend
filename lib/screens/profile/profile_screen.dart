@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/profile/profile_bloc.dart';
@@ -65,10 +64,6 @@ class _ProfileView extends StatelessWidget {
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: palette.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
       builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Padding(
@@ -76,13 +71,19 @@ class _ProfileView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Container(
-                  height: 4,
-                  width: 40,
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  decoration: BoxDecoration(
-                    color: palette.borderStrong,
-                    borderRadius: AppRadius.rPill,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text(
+                      'Profile photo',
+                      style: context.text.titleLarge,
+                    ),
                   ),
                 ),
                 ListTile(
@@ -109,19 +110,19 @@ class _ProfileView extends StatelessWidget {
                 ),
                 if (hasAvatar)
                   ListTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.delete_outline_rounded,
-                      color: AppColors.danger,
+                      color: palette.danger,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Remove current photo',
-                      style: TextStyle(color: AppColors.danger),
+                      style: TextStyle(color: palette.danger),
                     ),
                     onTap: () {
                       Navigator.of(sheetContext).pop();
-                      context
-                          .read<ProfileBloc>()
-                          .add(const ProfileAvatarRemoved());
+                      context.read<ProfileBloc>().add(
+                        const ProfileAvatarRemoved(),
+                      );
                     },
                   ),
               ],
@@ -148,7 +149,6 @@ class _ProfileView extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: context.palette.surfaceHigh,
         title: const Text('Sign out?'),
         content: const Text(
           'Your saved answers stay on this device, but you will need to sign '
@@ -168,7 +168,9 @@ class _ProfileView extends StatelessWidget {
                 (Route<dynamic> route) => false,
               );
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('Sign out'),
           ),
         ],
@@ -231,7 +233,17 @@ class _ProfileView extends StatelessWidget {
                     Row(
                       children: <Widget>[
                         Expanded(
-                          child: Text('Profile', style: context.text.displaySmall),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'YOUR ACCOUNT',
+                                style: context.text.labelSmall,
+                              ),
+                              const SizedBox(height: AppSpacing.xxs),
+                              Text('Profile', style: context.text.displaySmall),
+                            ],
+                          ),
                         ),
                         IconButton(
                           tooltip: 'Sign out',

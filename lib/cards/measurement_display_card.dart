@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/section_card.dart';
 
 /// The oversized readout that sits above the ruler on the height and
 /// weight questions — e.g. **172** `cm`.
@@ -23,41 +24,48 @@ class MeasurementDisplayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: <Widget>[
-            Text(
-              value,
-              style: context.text.displayLarge?.copyWith(
-                fontSize: 64,
-                height: 1,
-                color: palette.textPrimary,
+    return SectionCard(
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    value,
+                    style: context.text.displayLarge?.copyWith(
+                      fontSize: 64,
+                      height: 1,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    unitLabel,
+                    style: context.text.headlineSmall?.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              unitLabel,
-              style: context.text.headlineSmall?.copyWith(
-                color: palette.accent,
+            if (caption != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                caption!,
+                textAlign: TextAlign.center,
+                style: context.text.bodySmall,
               ),
-            ),
+            ],
           ],
         ),
-        if (caption != null) ...<Widget>[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            caption!,
-            style: context.text.bodySmall?.copyWith(
-              color: palette.textTertiary,
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

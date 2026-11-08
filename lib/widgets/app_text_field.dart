@@ -73,7 +73,7 @@ class _AppTextFieldState extends State<AppTextField> {
         Text(
           widget.label,
           style: context.text.labelMedium?.copyWith(
-            color: palette.textSecondary,
+            color: palette.textPrimary,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -107,11 +107,11 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget? _buildSuffix(AppPalette palette) {
     if (widget.obscure) {
       return IconButton(
-        onPressed: () => setState(() => _obscured = !_obscured),
+        onPressed: widget.enabled
+            ? () => setState(() => _obscured = !_obscured)
+            : null,
         icon: Icon(
-          _obscured
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined,
+          _obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
           size: AppSize.iconMd,
         ),
         color: palette.textTertiary,
@@ -144,10 +144,11 @@ class PasswordStrengthBar extends StatelessWidget {
   final String label;
 
   Color _color(BuildContext context) {
-    if (strength < 0.4) return AppColors.danger;
-    if (strength < 0.7) return AppColors.warning;
-    if (strength < 0.9) return AppColors.success;
-    return context.palette.accent;
+    final palette = context.palette;
+    if (strength < 0.4) return palette.danger;
+    if (strength < 0.7) return palette.warning;
+    if (strength < 0.9) return palette.success;
+    return palette.accent;
   }
 
   @override

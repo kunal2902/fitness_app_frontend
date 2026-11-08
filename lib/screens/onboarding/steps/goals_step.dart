@@ -26,31 +26,33 @@ class GoalsStep extends StatelessWidget {
         return OnboardingStepLayout(
           stepNumber: 4,
           totalSteps: OnboardingData.totalSteps,
-          scrollable: true,
           title: 'What are you training for?',
-          subtitle:
-              'Pick up to ${AppConfig.maxGoalSelections}. '
+          subtitle: 'Pick up to ${AppConfig.maxGoalSelections}. '
               '${selected.length} of ${AppConfig.maxGoalSelections} selected.',
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: FitnessGoal.values.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: AppSpacing.sm,
-              crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 0.98,
-            ),
-            itemBuilder: (BuildContext context, int i) {
-              final FitnessGoal goal = FitnessGoal.values[i];
-              final bool isSelected = selected.contains(goal);
-              return GoalCard(
-                goal: goal,
-                isSelected: isSelected,
-                isDisabled: atCap && !isSelected,
-                onTap: () => context
-                    .read<OnboardingBloc>()
-                    .add(OnboardingGoalToggled(goal)),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool oneColumn = constraints.maxWidth < 300 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 19;
+              final double width = oneColumn
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - AppSpacing.sm) / 2;
+              return Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final FitnessGoal goal in FitnessGoal.values)
+                    SizedBox(
+                      width: width,
+                      child: GoalCard(
+                        goal: goal,
+                        isSelected: selected.contains(goal),
+                        isDisabled: atCap && !selected.contains(goal),
+                        onTap: () => context
+                            .read<OnboardingBloc>()
+                            .add(OnboardingGoalToggled(goal)),
+                      ),
+                    ),
+                ],
               );
             },
           ),

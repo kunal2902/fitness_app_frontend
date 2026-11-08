@@ -16,46 +16,46 @@ class AppTypography {
     return TextTheme(
       // Hero numbers and onboarding headlines.
       displayLarge: TextStyle(
-        fontSize: 40,
+        fontSize: 42,
+        height: 1.06,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -1.4,
+        color: primary,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 36,
         height: 1.1,
         fontWeight: FontWeight.w800,
         letterSpacing: -1.0,
         color: primary,
       ),
-      displayMedium: TextStyle(
-        fontSize: 34,
-        height: 1.15,
-        fontWeight: FontWeight.w800,
-        letterSpacing: -0.8,
-        color: primary,
-      ),
       displaySmall: TextStyle(
         fontSize: 28,
         height: 1.2,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
         color: primary,
       ),
 
       // Section headers.
       headlineLarge: TextStyle(
-        fontSize: 26,
-        height: 1.25,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.4,
+        fontSize: 28,
+        height: 1.15,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.65,
         color: primary,
       ),
       headlineMedium: TextStyle(
-        fontSize: 22,
-        height: 1.3,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -0.3,
+        fontSize: 23,
+        height: 1.2,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.45,
         color: primary,
       ),
       headlineSmall: TextStyle(
         fontSize: 19,
         height: 1.35,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: primary,
       ),
 
@@ -63,7 +63,7 @@ class AppTypography {
       titleLarge: TextStyle(
         fontSize: 18,
         height: 1.35,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: primary,
       ),
       titleMedium: TextStyle(
@@ -118,7 +118,7 @@ class AppTypography {
         fontSize: 11,
         height: 1.2,
         fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
+        letterSpacing: 1,
         color: secondary,
       ),
     );

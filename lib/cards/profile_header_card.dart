@@ -26,7 +26,6 @@ class ProfileHeaderCard extends StatelessWidget {
     final AppPalette palette = context.palette;
 
     return SectionCard(
-      gradient: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -93,8 +92,9 @@ class ProfileHeaderCard extends StatelessWidget {
                           : '@username',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium
-                          ?.copyWith(color: palette.accent),
+                      style: context.text.bodyMedium?.copyWith(
+                        color: palette.accent,
+                      ),
                     ),
                   ],
                 ),
@@ -142,8 +142,18 @@ class ProfileHeaderCard extends StatelessWidget {
   static String _formatJoined(DateTime? date) {
     if (date == null) return '—';
     const List<String> months = <String>[
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
@@ -181,8 +191,9 @@ class _InfoRow extends StatelessWidget {
             textAlign: TextAlign.end,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.text.bodyMedium
-                ?.copyWith(color: palette.textPrimary),
+            style: context.text.bodyMedium?.copyWith(
+              color: palette.textPrimary,
+            ),
           ),
         ),
         if (trailing != null) ...<Widget>[
@@ -199,18 +210,16 @@ class _UnverifiedChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color warning = context.palette.warning;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.16),
+        color: warning.withValues(alpha: 0.12),
         borderRadius: AppRadius.rXs,
       ),
       child: Text(
         'UNVERIFIED',
-        style: context.text.labelSmall?.copyWith(
-          color: AppColors.warning,
-          fontSize: 9,
-        ),
+        style: context.text.labelSmall?.copyWith(color: warning, fontSize: 9),
       ),
     );
   }

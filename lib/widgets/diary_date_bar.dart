@@ -104,11 +104,15 @@ class _StepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
+    return IconButton.outlined(
       onPressed: onPressed,
       tooltip: tooltip,
       icon: Icon(icon, size: AppSize.iconLg),
-      color: context.palette.textSecondary,
+      style: IconButton.styleFrom(
+        foregroundColor: context.palette.textPrimary,
+        side: BorderSide(color: context.palette.borderStrong),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.rSm),
+      ),
       // Bigger than the glyph — a 24px arrow is an awkward tap target.
       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
     );

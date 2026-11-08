@@ -28,6 +28,7 @@ class GoalCard extends StatelessWidget {
 
     return Semantics(
       button: true,
+      enabled: !isDisabled,
       selected: isSelected,
       label: goal.label,
       child: Opacity(
@@ -35,14 +36,12 @@ class GoalCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: AppDuration.fast,
           curve: Curves.easeOut,
+          constraints: const BoxConstraints(minHeight: 122),
           decoration: BoxDecoration(
-            color: isSelected
-                ? palette.accent.withValues(alpha: 0.12)
-                : palette.surface,
+            color: isSelected ? palette.surfaceAlt : palette.surface,
             borderRadius: AppRadius.rMd,
             border: Border.all(
               color: isSelected ? palette.accent : palette.border,
-              width: isSelected ? 1.8 : 1,
             ),
           ),
           child: Material(
@@ -68,31 +67,28 @@ class GoalCard extends StatelessWidget {
                         Icon(
                           goal.icon,
                           size: AppSize.iconLg,
-                          color: isSelected
-                              ? palette.accent
-                              : palette.textSecondary,
+                          color: palette.textPrimary,
                         ),
                         const Spacer(),
-                        AnimatedScale(
-                          duration: AppDuration.fast,
-                          scale: isSelected ? 1 : 0.6,
-                          child: AnimatedOpacity(
-                            duration: AppDuration.fast,
-                            opacity: isSelected ? 1 : 0,
-                            child: Container(
-                              height: 22,
-                              width: 22,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: palette.accent,
-                              ),
-                              child: Icon(
-                                Icons.check_rounded,
-                                size: 15,
-                                color: palette.onAccent,
-                              ),
+                        Container(
+                          height: 22,
+                          width: 22,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: isSelected ? palette.accent : null,
+                            border: Border.all(
+                              color: isSelected
+                                  ? palette.accent
+                                  : palette.borderStrong,
                             ),
                           ),
+                          child: isSelected
+                              ? Icon(
+                                  Icons.check_rounded,
+                                  size: 15,
+                                  color: palette.onAccent,
+                                )
+                              : null,
                         ),
                       ],
                     ),
@@ -107,8 +103,6 @@ class GoalCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         goal.subtitle!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                         style: context.text.bodySmall?.copyWith(
                           color: palette.textTertiary,
                           fontSize: 12,

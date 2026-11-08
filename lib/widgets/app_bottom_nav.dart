@@ -16,11 +16,7 @@ class NavDestination {
   final IconData activeIcon;
 }
 
-/// The app's five-tab bottom bar.
-///
-/// Hand-built rather than Material's [NavigationBar] so the active pill,
-/// the volt accent and the near-black surface match the rest of the design
-/// system exactly, and so the height stays predictable across platforms.
+/// The shared tab bar. A short marker and filled icon identify the active tab.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     required this.destinations,
@@ -38,16 +34,17 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
+    final double labelExtra = (MediaQuery.textScalerOf(context).scale(11) - 11)
+        .clamp(0.0, 16.0)
+        .toDouble();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: palette.surface,
-        border: Border(top: BorderSide(color: palette.border)),
-      ),
+    return Material(
+      color: palette.bg,
+      shape: Border(top: BorderSide(color: palette.border)),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: height,
+          height: height + labelExtra,
           child: Row(
             children: List<Widget>.generate(destinations.length, (int i) {
               final NavDestination item = destinations[i];
@@ -58,51 +55,53 @@ class AppBottomNav extends StatelessWidget {
                   button: true,
                   selected: isActive,
                   label: item.label,
-                  child: InkResponse(
+                  child: InkWell(
                     onTap: () {
                       if (isActive) return;
                       HapticFeedback.selectionClick();
                       onSelected(i);
                     },
-                    radius: 42,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        AnimatedContainer(
-                          duration: AppDuration.fast,
-                          curve: Curves.easeOut,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.xxs + 2,
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          AnimatedContainer(
+                            duration: AppDuration.fast,
+                            curve: Curves.easeOut,
+                            width: isActive ? 14 : 0,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: palette.accent,
+                              borderRadius: AppRadius.rPill,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? palette.accent.withValues(alpha: 0.14)
-                                : Colors.transparent,
-                            borderRadius: AppRadius.rPill,
-                          ),
-                          child: Icon(
+                          const SizedBox(height: AppSpacing.xs),
+                          Icon(
                             isActive ? item.activeIcon : item.icon,
                             size: AppSize.iconMd,
                             color: isActive
                                 ? palette.accent
-                                : palette.textTertiary,
+                                : palette.textSecondary,
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        AnimatedDefaultTextStyle(
-                          duration: AppDuration.fast,
-                          style: context.text.labelSmall!.copyWith(
-                            fontSize: 10,
-                            letterSpacing: 0.2,
-                            color:
-                                isActive ? palette.accent : palette.textTertiary,
-                            fontWeight:
-                                isActive ? FontWeight.w700 : FontWeight.w600,
+                          const SizedBox(height: AppSpacing.xxs),
+                          AnimatedDefaultTextStyle(
+                            duration: AppDuration.fast,
+                            style: context.text.labelSmall!.copyWith(
+                              letterSpacing: 0.1,
+                              color: isActive
+                                  ? palette.accent
+                                  : palette.textSecondary,
+                              fontWeight:
+                                  isActive ? FontWeight.w800 : FontWeight.w500,
+                            ),
+                            child: Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          child: Text(item.label),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -24,12 +24,20 @@ class GenderStep extends StatelessWidget {
           title: 'What is your gender?',
           subtitle:
               'We use this to calibrate calorie and volume recommendations.',
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  for (final Gender gender in Gender.values) ...<Widget>[
-                    Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool oneColumn = constraints.maxWidth < 270 ||
+                  MediaQuery.textScalerOf(context).scale(18) > 26;
+              final double width = oneColumn
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - AppSpacing.sm) / 2;
+              return Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final Gender gender in Gender.values)
+                    SizedBox(
+                      width: width,
                       child: GenderCard(
                         gender: gender,
                         isSelected: state.data.gender == gender,
@@ -38,13 +46,9 @@ class GenderStep extends StatelessWidget {
                             .add(OnboardingGenderSelected(gender)),
                       ),
                     ),
-                    if (gender != Gender.values.last)
-                      const SizedBox(width: AppSpacing.md),
-                  ],
                 ],
-              ),
-              const Spacer(),
-            ],
+              );
+            },
           ),
         );
       },

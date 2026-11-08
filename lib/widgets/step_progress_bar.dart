@@ -8,7 +8,7 @@ class StepProgressBar extends StatelessWidget {
   const StepProgressBar({
     required this.currentStep,
     required this.totalSteps,
-    this.height = 4,
+    this.height = 3,
     super.key,
   });
 
@@ -24,7 +24,9 @@ class StepProgressBar extends StatelessWidget {
       label: 'Question ${currentStep + 1} of $totalSteps',
       child: Row(
         children: List<Widget>.generate(totalSteps, (int i) {
-          final bool filled = i <= currentStep;
+          final Color fill = i == currentStep
+              ? palette.accent
+              : (i < currentStep ? palette.textTertiary : palette.border);
           return Expanded(
             child: Padding(
               padding: EdgeInsets.only(right: i == totalSteps - 1 ? 0 : 4),
@@ -33,8 +35,8 @@ class StepProgressBar extends StatelessWidget {
                 curve: Curves.easeOut,
                 height: height,
                 decoration: BoxDecoration(
-                  color: filled ? palette.accent : palette.border,
-                  borderRadius: BorderRadius.circular(height),
+                  color: fill,
+                  borderRadius: BorderRadius.circular(1),
                 ),
               ),
             ),

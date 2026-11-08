@@ -10,8 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // two mean completely different things, which is worse than the
 // compile error.
 import 'package:flutter_callkit_incoming/entities/entities.dart' as ckit;
-import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart'
-    as ckit;
+import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart' as ckit;
 
 import '../config/app_config.dart';
 import '../models/call_models.dart';
@@ -99,12 +98,8 @@ class PushService {
     if (!_firebaseAvailable) return;
 
     try {
-      final NotificationSettings settings =
-          await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      final NotificationSettings settings = await FirebaseMessaging.instance
+          .requestPermission(alert: true, badge: true, sound: true);
 
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
         developer.log('notifications denied', name: 'push');
@@ -148,8 +143,10 @@ class PushService {
             kind: 'fcm',
           );
         } catch (error) {
-          developer.log('token refresh registration failed: $error',
-              name: 'push');
+          developer.log(
+            'token refresh registration failed: $error',
+            name: 'push',
+          );
         }
       });
     } catch (error) {
@@ -200,8 +197,8 @@ class PushService {
         isCustomNotification: true,
         isShowLogo: false,
         ringtonePath: 'system_ringtone_default',
-        backgroundColor: '#07090D',
-        actionColor: '#C6FF3D',
+        backgroundColor: '#090909',
+        actionColor: '#FAFAFA',
         // Button labels live on AndroidParams in 3.x, not on CallKitParams.
         textAccept: 'Answer',
         textDecline: 'Decline',
@@ -295,11 +292,11 @@ class PushService {
 
       switch (event) {
         case ckit.CallEventActionCallAccept(
-              :final ckit.CallKitParams callKitParams,
-            ):
+          :final ckit.CallKitParams callKitParams,
+        ):
           final Map<String, dynamic> extra = _extraOf(callKitParams);
-          final String callId =
-              (extra['callId'] ?? callKitParams.id).toString();
+          final String callId = (extra['callId'] ?? callKitParams.id)
+              .toString();
 
           final IncomingCall call =
               _pending[callId] ?? IncomingCall.fromPushData(extra);
@@ -310,13 +307,11 @@ class PushService {
         case ckit.CallEventActionCallDecline(
               :final ckit.CallKitParams callKitParams,
             ) ||
-              ckit.CallEventActionCallEnded(
-                :final ckit.CallKitParams callKitParams,
-              ):
+            ckit.CallEventActionCallEnded(
+              :final ckit.CallKitParams callKitParams,
+            ):
           final Map<String, dynamic> extra = _extraOf(callKitParams);
-          _declineCall(
-            (extra['callId'] ?? callKitParams.id).toString(),
-          );
+          _declineCall((extra['callId'] ?? callKitParams.id).toString());
 
         case ckit.CallEventActionCallTimeout(:final String id):
           _declineCall(id);

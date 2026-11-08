@@ -36,13 +36,10 @@ class OptionCard extends StatelessWidget {
         curve: Curves.easeOut,
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: isSelected
-              ? palette.accent.withValues(alpha: 0.10)
-              : palette.surface,
+          color: isSelected ? palette.surfaceAlt : palette.surface,
           borderRadius: AppRadius.rMd,
           border: Border.all(
             color: isSelected ? palette.accent : palette.border,
-            width: isSelected ? 1.8 : 1,
           ),
         ),
         child: Material(
@@ -66,9 +63,7 @@ class OptionCard extends StatelessWidget {
                       height: 40,
                       width: 40,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? palette.accent.withValues(alpha: 0.16)
-                            : palette.surfaceAlt,
+                        color: palette.surfaceHigh,
                         borderRadius: AppRadius.rSm,
                       ),
                       child: Icon(
@@ -86,11 +81,7 @@ class OptionCard extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           option.label,
-                          style: context.text.titleMedium?.copyWith(
-                            color: isSelected
-                                ? palette.textPrimary
-                                : palette.textPrimary,
-                          ),
+                          style: context.text.titleMedium,
                         ),
                         if (option.subtitle != null) ...<Widget>[
                           const SizedBox(height: 2),

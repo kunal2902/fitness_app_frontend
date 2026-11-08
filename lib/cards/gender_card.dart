@@ -29,17 +29,15 @@ class GenderCard extends StatelessWidget {
         duration: AppDuration.normal,
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color:
-              isSelected ? palette.accent.withValues(alpha: 0.12) : palette.surface,
-          borderRadius: AppRadius.rLg,
+          color: isSelected ? palette.surfaceAlt : palette.surface,
+          borderRadius: AppRadius.rMd,
           border: Border.all(
             color: isSelected ? palette.accent : palette.border,
-            width: isSelected ? 2 : 1,
           ),
         ),
         child: Material(
           color: Colors.transparent,
-          borderRadius: AppRadius.rLg,
+          borderRadius: AppRadius.rMd,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
@@ -48,7 +46,7 @@ class GenderCard extends StatelessWidget {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.xxl,
+                vertical: AppSpacing.xl,
                 horizontal: AppSpacing.md,
               ),
               child: Column(
@@ -57,25 +55,23 @@ class GenderCard extends StatelessWidget {
                 children: <Widget>[
                   AnimatedContainer(
                     duration: AppDuration.normal,
-                    height: 76,
-                    width: 76,
+                    height: 56,
+                    width: 56,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected
-                          ? palette.accent
-                          : palette.surfaceAlt,
+                      borderRadius: AppRadius.rSm,
+                      color: isSelected ? palette.accent : palette.surfaceHigh,
                     ),
                     child: Icon(
                       gender.icon,
-                      size: 38,
-                      color: isSelected
-                          ? palette.onAccent
-                          : palette.textSecondary,
+                      size: 30,
+                      color:
+                          isSelected ? palette.onAccent : palette.textSecondary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     gender.label,
+                    textAlign: TextAlign.center,
                     style: context.text.titleLarge?.copyWith(
                       color: isSelected
                           ? palette.textPrimary

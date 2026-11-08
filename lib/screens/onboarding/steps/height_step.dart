@@ -78,7 +78,7 @@ class _HeightStepState extends State<HeightStep> {
                   },
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.xl),
               MeasurementDisplayCard(
                 value: UnitConverter.heightValue(cm, unit),
                 unitLabel: isMetric ? 'cm' : 'ft in',
@@ -129,7 +129,6 @@ class _HeightStepState extends State<HeightStep> {
                         );
                   },
                 ),
-              const Spacer(),
             ],
           ),
         );

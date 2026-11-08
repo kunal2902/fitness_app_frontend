@@ -34,13 +34,13 @@ class ProfessionalCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        gradient: palette.cardGradient,
-        borderRadius: AppRadius.rLg,
+        color: palette.surface,
+        borderRadius: AppRadius.rMd,
         border: Border.all(color: palette.border),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: AppRadius.rLg,
+        borderRadius: AppRadius.rMd,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -73,8 +73,9 @@ class ProfessionalCard extends StatelessWidget {
                             professional.headline,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: context.text.bodySmall
-                                ?.copyWith(color: palette.textSecondary),
+                            style: context.text.bodySmall?.copyWith(
+                              color: palette.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           PresenceLabel(
@@ -110,7 +111,7 @@ class ProfessionalCard extends StatelessWidget {
                             _MetaChip(
                               icon: Icons.star_rounded,
                               label: ratingLabel,
-                              tint: AppColors.warning,
+                              tint: palette.textPrimary,
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             _MetaChip(
@@ -138,13 +139,15 @@ class ProfessionalCard extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               professional.formattedRate,
-                              style: context.text.titleMedium
-                                  ?.copyWith(color: palette.accent),
+                              style: context.text.titleMedium?.copyWith(
+                                color: palette.accent,
+                              ),
                             ),
                             Text(
                               ' /session',
-                              style: context.text.bodySmall
-                                  ?.copyWith(color: palette.textTertiary),
+                              style: context.text.bodySmall?.copyWith(
+                                color: palette.textTertiary,
+                              ),
                             ),
                           ],
                         ),
@@ -167,8 +170,9 @@ class ProfessionalCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: palette.accent.withValues(alpha: 0.12),
+                              color: palette.surfaceAlt,
                               borderRadius: AppRadius.rXs,
+                              border: Border.all(color: palette.border),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -230,8 +234,10 @@ class _Avatar extends StatelessWidget {
                       avatarUrl!,
                       fit: BoxFit.cover,
                       cacheWidth: (size * 3).round(),
-                      errorBuilder: (_, __, ___) =>
-                          _Monogram(initials: professional.initials, size: size),
+                      errorBuilder: (_, __, ___) => _Monogram(
+                        initials: professional.initials,
+                        size: size,
+                      ),
                     ),
             ),
           ),
@@ -240,7 +246,7 @@ class _Avatar extends StatelessWidget {
             bottom: 2,
             child: PresenceDot(
               isOnline: professional.isOnline,
-              ringColor: palette.surfaceHigh,
+              ringColor: palette.surface,
             ),
           ),
         ],
@@ -257,15 +263,16 @@ class _Monogram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppPalette palette = context.palette;
     return Container(
-      decoration: const BoxDecoration(gradient: AppColors.voltGradient),
+      color: palette.surfaceHigh,
       alignment: Alignment.center,
       child: Text(
         initials,
         style: TextStyle(
           fontSize: size * 0.34,
           fontWeight: FontWeight.w800,
-          color: AppColors.onVolt,
+          color: palette.textPrimary,
         ),
       ),
     );

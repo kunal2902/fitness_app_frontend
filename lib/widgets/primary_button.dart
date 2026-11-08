@@ -4,8 +4,7 @@ import '../theme/app_theme.dart';
 
 /// The app's main call-to-action.
 ///
-/// Filled with the volt accent, collapses to a spinner while [isLoading],
-/// and greys out when [onPressed] is null.
+/// Uses an inverted fill and shows a progress indicator while [isLoading].
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     required this.label,
@@ -33,7 +32,8 @@ class PrimaryButton extends StatelessWidget {
             width: 22,
             child: CircularProgressIndicator(
               strokeWidth: 2.4,
-              valueColor: AlwaysStoppedAnimation<Color>(palette.onAccent),
+              color: palette.textSecondary,
+              semanticsLabel: '$label, loading',
             ),
           )
         : Row(
@@ -43,7 +43,7 @@ class PrimaryButton extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                 ),
@@ -55,13 +55,9 @@ class PrimaryButton extends StatelessWidget {
             ],
           );
 
-    final Widget button = AnimatedOpacity(
-      duration: AppDuration.fast,
-      opacity: enabled ? 1 : 0.55,
-      child: ElevatedButton(
-        onPressed: enabled ? onPressed : null,
-        child: child,
-      ),
+    final Widget button = ElevatedButton(
+      onPressed: enabled ? onPressed : null,
+      child: child,
     );
 
     return expand ? SizedBox(width: double.infinity, child: button) : button;
@@ -99,7 +95,7 @@ class GhostButton extends StatelessWidget {
             Icon(icon, size: AppSize.iconSm),
             const SizedBox(width: AppSpacing.xxs),
           ],
-          Text(label),
+          Flexible(child: Text(label, textAlign: TextAlign.center)),
         ],
       ),
     );
@@ -127,14 +123,20 @@ class CircleIconButton extends StatelessWidget {
       label: tooltip,
       child: Material(
         color: palette.surfaceAlt,
-        shape: const CircleBorder(),
+        shape: CircleBorder(side: BorderSide(color: palette.border)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onPressed,
           child: SizedBox(
             height: 44,
             width: 44,
-            child: Icon(icon, size: AppSize.iconMd, color: palette.textPrimary),
+            child: Icon(
+              icon,
+              size: AppSize.iconMd,
+              color: onPressed == null
+                  ? palette.textTertiary
+                  : palette.textPrimary,
+            ),
           ),
         ),
       ),

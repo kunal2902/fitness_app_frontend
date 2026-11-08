@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Shared chrome for the stacked cards on the profile screen.
-///
-/// Having one card widget is what keeps the three sections looking like a
-/// single surface rather than three different components that happen to be
-/// near each other.
+/// A matte surface for sections across the app.
 class SectionCard extends StatelessWidget {
   const SectionCard({
     required this.child,
@@ -27,7 +23,7 @@ class SectionCard extends StatelessWidget {
 
   final EdgeInsets padding;
 
-  /// Use the subtle surface gradient instead of a flat fill.
+  /// Give an emphasized section a slightly raised surface.
   final bool gradient;
 
   @override
@@ -38,9 +34,8 @@ class SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: gradient ? null : palette.surface,
-        gradient: gradient ? palette.cardGradient : null,
-        borderRadius: AppRadius.rLg,
+        color: gradient ? palette.surfaceAlt : palette.surface,
+        borderRadius: AppRadius.rMd,
         border: Border.all(color: palette.border),
       ),
       child: Column(
@@ -53,10 +48,10 @@ class SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title!.toUpperCase(),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.labelSmall
-                        ?.copyWith(color: palette.accent),
+                        ?.copyWith(color: palette.textSecondary),
                   ),
                 ),
                 if (trailing != null) trailing!,

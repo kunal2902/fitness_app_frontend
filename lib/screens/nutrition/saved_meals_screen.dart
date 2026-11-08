@@ -6,6 +6,7 @@ import '../../models/saved_meal.dart';
 import '../../services/nutrition_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_snackbar.dart';
+import '../../widgets/section_card.dart';
 
 /// Lists the member's reusable meal templates and logs one to [date].
 class SavedMealsScreen extends StatefulWidget {
@@ -133,7 +134,9 @@ class _SavedMealsScreenState extends State<SavedMealsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -240,74 +243,65 @@ class _SavedMealCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppPalette palette = context.palette;
-    return Card(
-      color: palette.surface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.rMd,
-        side: BorderSide(color: palette.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    meal.name,
-                    style: context.text.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  onPressed: busy ? null : onDelete,
-                  tooltip: 'Delete ${meal.name}',
-                  icon: const Icon(Icons.delete_outline_rounded),
-                ),
-              ],
-            ),
-            Text(
-              meal.itemSummary,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.text.bodySmall?.copyWith(
-                color: palette.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '${meal.totals.kcal.round()} kcal  ·  '
-              'P ${meal.totals.proteinG.round()}g  ·  '
-              'C ${meal.totals.carbsG.round()}g  ·  '
-              'F ${meal.totals.fatG.round()}g',
-              style: context.text.labelMedium?.copyWith(
-                color: palette.textTertiary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: busy ? null : onUse,
-                icon: busy
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.add_rounded),
-                label: Text(
-                  destination == null
-                      ? 'Add to diary'
-                      : 'Add to ${destination!.label.toLowerCase()}',
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  meal.name,
+                  style: context.text.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              IconButton(
+                onPressed: busy ? null : onDelete,
+                tooltip: 'Delete ${meal.name}',
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
+          Text(
+            meal.itemSummary,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.bodySmall?.copyWith(
+              color: palette.textSecondary,
+              height: 1.4,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '${meal.totals.kcal.round()} kcal  ·  '
+            'P ${meal.totals.proteinG.round()}g  ·  '
+            'C ${meal.totals.carbsG.round()}g  ·  '
+            'F ${meal.totals.fatG.round()}g',
+            style: context.text.labelMedium?.copyWith(
+              color: palette.textTertiary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: busy ? null : onUse,
+              icon: busy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_rounded),
+              label: Text(
+                destination == null
+                    ? 'Add to diary'
+                    : 'Add to ${destination!.label.toLowerCase()}',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

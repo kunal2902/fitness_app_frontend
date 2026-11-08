@@ -27,12 +27,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   late final UserModel? _original = AppStore.instance.user;
-  late final TextEditingController _fullName =
-      TextEditingController(text: _original?.fullName ?? '');
-  late final TextEditingController _username =
-      TextEditingController(text: _original?.username ?? '');
-  late final TextEditingController _email =
-      TextEditingController(text: _original?.email ?? '');
+  late final TextEditingController _fullName = TextEditingController(
+    text: _original?.fullName ?? '',
+  );
+  late final TextEditingController _username = TextEditingController(
+    text: _original?.username ?? '',
+  );
+  late final TextEditingController _email = TextEditingController(
+    text: _original?.email ?? '',
+  );
 
   @override
   void initState() {
@@ -90,12 +93,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     _submitted = true;
     context.read<ProfileBloc>().add(
-          ProfileUpdateSubmitted(
-            fullName: _changedFullName,
-            username: _changedUsername,
-            email: _changedEmail,
-          ),
-        );
+      ProfileUpdateSubmitted(
+        fullName: _changedFullName,
+        username: _changedUsername,
+        email: _changedEmail,
+      ),
+    );
   }
 
   Future<bool> _confirmDiscard() async {
@@ -104,7 +107,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final bool? discard = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: context.palette.surfaceHigh,
         title: const Text('Discard changes?'),
         content: const Text('Your edits have not been saved.'),
         actions: <Widget>[
@@ -114,7 +116,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('Discard'),
           ),
         ],
@@ -233,18 +237,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            const Icon(
+                            Icon(
                               Icons.info_outline_rounded,
                               size: AppSize.iconSm,
-                              color: AppColors.warning,
+                              color: palette.warning,
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             Expanded(
                               child: Text(
                                 'Changing your email marks it unverified until '
                                 'you confirm the new address.',
-                                style: context.text.bodySmall
-                                    ?.copyWith(color: palette.textTertiary),
+                                style: context.text.bodySmall?.copyWith(
+                                  color: palette.textTertiary,
+                                ),
                               ),
                             ),
                           ],
@@ -262,8 +267,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Center(
                           child: Text(
                             'Nothing changed yet',
-                            style: context.text.bodySmall
-                                ?.copyWith(color: palette.textTertiary),
+                            style: context.text.bodySmall?.copyWith(
+                              color: palette.textTertiary,
+                            ),
                           ),
                         ),
                       ],

@@ -94,13 +94,12 @@ class _ChatComposerState extends State<ChatComposer> {
                   inputFormatters: <TextInputFormatter>[
                     LengthLimitingTextInputFormatter(4000),
                   ],
-                  style: context.text.bodyMedium
-                      ?.copyWith(color: palette.textPrimary),
+                  style: context.text.bodyMedium?.copyWith(
+                    color: palette.textPrimary,
+                  ),
                   cursorColor: palette.accent,
                   decoration: InputDecoration(
-                    hintText: widget.enabled
-                        ? widget.hintText
-                        : 'Connecting…',
+                    hintText: widget.enabled ? widget.hintText : 'Connecting…',
                     isDense: true,
                     filled: true,
                     fillColor: palette.surfaceAlt,
@@ -109,15 +108,15 @@ class _ChatComposerState extends State<ChatComposer> {
                       vertical: AppSpacing.sm + 2,
                     ),
                     border: const OutlineInputBorder(
-                      borderRadius: AppRadius.rXl,
+                      borderRadius: AppRadius.rMd,
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: AppRadius.rXl,
-                      borderSide: BorderSide(color: palette.border),
+                      borderRadius: AppRadius.rMd,
+                      borderSide: BorderSide(color: palette.borderStrong),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: AppRadius.rXl,
+                      borderRadius: AppRadius.rMd,
                       borderSide: BorderSide(color: palette.accent, width: 1.4),
                     ),
                   ),
